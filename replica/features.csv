@@ -1,0 +1,31 @@
+feature,area,priority,original,clone,notes
+Sign up / log in (learner + admin),auth,must,yes,yes,role-based
+Course builder: chapters + lessons (video/text),courses,must,yes,yes,reuse aios-lms content model
+Publish a course with a price,courses,must,yes,yes,
+Batches / cohorts with a start date,batches,must,yes,yes,core to Edmingle
+Learner course player with progress,learning,must,yes,yes,mark complete
+Drip: lessons unlock by batch day,learning,must,yes,yes,aios-lms already has this
+Quizzes / assessments,assessments,must,yes,yes,reuse aios-lms
+Certificate on completion + LinkedIn share,certificates,must,yes,yes,reuse aios-lms
+Checkout with Razorpay,payments,must,yes,no,test mode first
+Automatic GST invoice per purchase,payments,must,yes,no,reuse aios-lms GST engine
+Admin dashboard: revenue/enrolments/learners,analytics,must,yes,partial,course list done; revenue/metrics next
+Learner list with progress,admin,must,yes,yes,
+Live classes: schedule Zoom/Meet + invite batch,live,should,yes,no,links in v1
+Live class recordings added back to batch,live,should,yes,no,
+Coupons / promo codes,payments,should,yes,no,aios-lms has coupon logic
+B2B sub-orgs: company buys seats + assigns staff,b2b,should,yes,no,the AI OS edge; reuse aios-lms seats
+AI marking of assignments + trainer approval,assessments,should,yes,no,reuse aios-lms; a gap feature
+White-label branding: logo/colours/domain,branding,should,yes,no,one academy in v1
+Attendance tracking per batch,batches,should,yes,no,
+Memberships / all-access subscription,payments,could,yes,no,
+Community / discussion per batch,engagement,could,yes,no,
+Analytics exports + cohort reports,analytics,could,yes,no,
+Email/WhatsApp campaigns + workflows,marketing,could,yes,no,
+Referrals and loyalty,engagement,could,yes,no,
+DRM / anti-piracy (Widevine screenshot block),security,must,yes,skip,licensed platform-level; watermark only
+Native white-label apps on customer dev accounts,branding,should,yes,skip,store/ops service; PWA first
+Proctored exams / UGC-DEB compliance,assessments,should,yes,skip,regulated vertical
+Multi-tenant SaaS hosting other academies,platform,should,yes,skip,v1 is one academy not a reseller
+Integrations marketplace (HRMS/CRM),integrations,could,yes,skip,add later with own keys
+Edmingle brand/app/content,brand,must,yes,skip,rebrand = AI OS Academy
