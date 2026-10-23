@@ -13,12 +13,20 @@ export type Batch = { id: string; courseId: string; name: string; startDate: str
 export type Enrolment = { id: string; userId: string; batchId: string; source: string; enrolledAt: string };
 export type User = { id: string; name: string; email: string; role: Role };
 
+export type Order = {
+  no: string; at: string; courseId: string; qty: number;
+  buyerName: string; buyerEmail: string; buyerState: string; buyerGstin: string;
+  rateMinor: number; grossMinor: number; discountMinor: number; taxableMinor: number;
+  cgstMinor: number; sgstMinor: number; igstMinor: number; totalMinor: number; intra: boolean;
+  coupon: string; razorpayPaymentId: string | null;
+};
 type DB = {
   users: User[]; courses: Course[]; chapters: Chapter[]; lessons: Lesson[];
   batches: Batch[]; enrolments: Enrolment[];
   progress: { enrolmentId: string; lessonId: string }[];
   quizScores: { enrolmentId: string; lessonId: string; score: number }[];
   certs: { userId: string; courseId: string; certNo: string; issuedAt: string }[];
+  orders: Order[]; invSeq: number;
 };
 
 const g = globalThis as unknown as { __lmsdb?: DB };
@@ -32,10 +40,13 @@ function seed(): DB {
   const courses: Course[] = [
     { id: "c1", title: "AI for MSME Owners", slug: "ai-for-msme-owners", level: "Beginner", published: true, priceMinor: 0,
       blurb: "Four short chapters to find the repeat work in your business and hand it to AI." },
+    { id: "c2", title: "AI for Accounts & Office Staff", slug: "ai-for-accounts-staff", level: "Beginner", published: true, priceMinor: 299900,
+      blurb: "Faster emails, cleaner Excel data, tidy bank narrations, and three rules for checking AI's numbers." },
   ];
   const chapters: Chapter[] = [
     { id: "ch1", courseId: "c1", title: "Week 1 · Where AI saves you time", position: 0, dripDay: 0 },
     { id: "ch2", courseId: "c1", title: "Week 2 · Running the business with AI", position: 1, dripDay: 7 },
+    { id: "ch3", courseId: "c2", title: "Everyday office work", position: 0, dripDay: 0 },
   ];
   const lessons: Lesson[] = [
     { id: "l1", chapterId: "ch1", title: "Mapping your week: find the repeat work", kind: "video", minutes: 12, position: 0,
@@ -51,10 +62,17 @@ function seed(): DB {
         { q: "A good first AI task…", o: ["Happens once a year", "Repeats weekly and can be checked", "Has no clear answer"], a: 1 },
       ] },
   ];
+  lessons.push(
+    { id: "s1", chapterId: "ch3", title: "Emails and letters in half the time", kind: "video", minutes: 9, position: 0,
+      content: "Paste the email you received, say who you are and what you want to reply, and ask for three versions: short, formal and friendly. Pick one and edit." },
+    { id: "s2", chapterId: "ch3", title: "Cleaning up Excel data with AI", kind: "video", minutes: 13, position: 1,
+      content: "Ask the AI to write the Excel formula instead of fixing the data by hand. Test the formula on ten rows before applying it to the whole sheet." },
+  );
   const batches: Batch[] = [
     { id: "b1", courseId: "c1", name: "November 2026 cohort", startDate: isoDaysAgo(9), seats: 30, status: "running" },
+    { id: "b2", courseId: "c2", name: "Recorded · self-paced", startDate: isoDaysAgo(0), seats: null, status: "running" },
   ];
-  return { users, courses, chapters, lessons, batches, enrolments: [], progress: [], quizScores: [], certs: [] };
+  return { users, courses, chapters, lessons, batches, enrolments: [], progress: [], quizScores: [], certs: [], orders: [], invSeq: 0 };
 }
 function isoDaysAgo(n: number) { return new Date(Date.now() - n * DAY).toISOString().slice(0, 10); }
 function db(): DB { if (!g.__lmsdb) g.__lmsdb = seed(); return g.__lmsdb; }
@@ -161,6 +179,33 @@ export function addLesson(chapterId: string, title: string, content: string, min
   db().lessons.push(l); return l;
 }
 export function publishCourse(courseId: string) { const c = getCourse(courseId); if (c) c.published = true; }
+
+// ---- orders / GST invoices ----
+import { quote as gstQuote, invoiceNo } from "./gst";
+export function createOrder(input: {
+  userId: string; courseId: string; qty: number;
+  buyerName: string; buyerEmail: string; buyerState: string; buyerGstin: string;
+  coupon?: string; razorpayPaymentId?: string | null;
+}): Order {
+  const course = getCourse(input.courseId)!;
+  const q = gstQuote(course.priceMinor, input.qty, input.buyerState, input.coupon || "");
+  db().invSeq++;
+  const order: Order = {
+    no: invoiceNo(db().invSeq), at: new Date().toISOString(), courseId: input.courseId, qty: input.qty,
+    buyerName: input.buyerName, buyerEmail: input.buyerEmail, buyerState: input.buyerState, buyerGstin: input.buyerGstin,
+    rateMinor: course.priceMinor, grossMinor: q.gross, discountMinor: q.discount, taxableMinor: q.taxable,
+    cgstMinor: q.cgst, sgstMinor: q.sgst, igstMinor: q.igst, totalMinor: q.total, intra: q.intra,
+    coupon: q.coupon, razorpayPaymentId: input.razorpayPaymentId ?? null,
+  };
+  db().orders.push(order);
+  // enrol the buyer in the course's first batch
+  const batch = getBatchesForCourse(input.courseId)[0];
+  if (batch) enrol(input.userId, batch.id, input.qty > 1 ? "org_seat" : "individual");
+  return order;
+}
+export const getOrder = (no: string) => db().orders.find((o) => o.no === no) ?? null;
+export const getOrdersForUser = (email: string) => db().orders.filter((o) => o.buyerEmail === email);
+export const allOrders = () => db().orders;
 export function createBatch(courseId: string, name: string, startDate: string, seats: number | null) {
   const b: Batch = { id: newId("b"), courseId, name, startDate, seats, status: "running" };
   db().batches.push(b); return b;

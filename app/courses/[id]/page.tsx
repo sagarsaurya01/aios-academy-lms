@@ -47,7 +47,12 @@ export default function CoursePage({ params }: { params: { id: string } }) {
             <p className="mb-3 text-xs text-muted">{courseLessons(course.id).length} lessons{batch ? ` · ${batch.name}` : ""}</p>
             {enrolled
               ? <Link href={`/learn/${course.id}`} className="btn w-full">Continue learning</Link>
-              : <form action={enrolAction}><input type="hidden" name="courseId" value={course.id} /><button className="btn w-full">Enrol free</button></form>}
+              : course.priceMinor
+                ? <Link href={`/checkout/${course.id}`} className="btn w-full">Buy for ₹{course.priceMinor / 100} + GST</Link>
+                : <form action={enrolAction}><input type="hidden" name="courseId" value={course.id} /><button className="btn w-full">Enrol free</button></form>}
+            {course.priceMinor > 0 && !enrolled && (
+              <Link href={`/checkout/${course.id}?qty=10`} className="mt-2 block text-center text-xs text-brand">Buying seats for your team?</Link>
+            )}
             {batch && <p className="mt-2 text-xs text-muted">Batch starts {batch.startDate}{batch.seats ? ` · ${batch.seats} seats` : ""}</p>}
           </div>
         </aside>

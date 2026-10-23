@@ -6,8 +6,9 @@ import { setCurrentUser, currentUser } from "@/lib/session";
 import {
   getUsers, createCourse, addChapter, addLesson, publishCourse, createBatch,
   getCourse, getBatchesForCourse, enrol, getEnrolmentForCourse, markComplete,
-  getLesson, saveQuiz, issueCert, eligibleForCert,
+  getLesson, saveQuiz, issueCert, eligibleForCert, createOrder,
 } from "@/lib/data";
+import { createRazorpayOrder, razorpayLive } from "@/lib/razorpay";
 
 export async function switchUserAction(formData: FormData) {
   const id = String(formData.get("uid"));
@@ -69,6 +70,33 @@ export async function enrolAction(formData: FormData) {
   revalidatePath(`/courses/${courseId}`);
   redirect(`/learn/${courseId}`);
 }
+export async function checkoutAction(formData: FormData) {
+  const me = currentUser(); if (!me) redirect("/login");
+  const courseId = String(formData.get("courseId"));
+  const course = getCourse(courseId);
+  if (!course) redirect("/");
+  const qty = Math.max(1, Number(formData.get("qty") || 1));
+  const buyerName = String(formData.get("name") || me.name).trim();
+  const buyerEmail = String(formData.get("email") || me.email).trim();
+  const buyerState = String(formData.get("state") || "West Bengal");
+  const buyerGstin = String(formData.get("gstin") || "").trim();
+  const coupon = String(formData.get("coupon") || "").trim();
+
+  // Create the Razorpay order server-side (live when keys are set; simulated otherwise).
+  // In live mode the browser would open Razorpay Checkout with this order id and,
+  // on success, we'd verify the signature before creating the invoice. Here, in
+  // simulated mode, we complete immediately.
+  const order = await createRazorpayOrder(course.priceMinor * qty, "rcpt_" + Date.now());
+  const paymentId = razorpayLive ? null : "pay_sim_" + Date.now();
+
+  const inv = createOrder({
+    userId: me.id, courseId, qty, buyerName, buyerEmail, buyerState, buyerGstin, coupon,
+    razorpayPaymentId: order.simulated ? paymentId : null, // live: set by webhook/verify
+  });
+  revalidatePath(`/learn/${courseId}`);
+  redirect(`/invoices/${encodeURIComponent(inv.no)}`);
+}
+
 export async function completeLessonAction(formData: FormData) {
   const me = currentUser(); if (!me) redirect("/login");
   const courseId = String(formData.get("courseId"));
