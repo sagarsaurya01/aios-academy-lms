@@ -10,7 +10,7 @@ Certificate on completion + LinkedIn share,certificates,must,yes,yes,reuse aios-
 Checkout with Razorpay,payments,must,yes,no,test mode first
 Automatic GST invoice per purchase,payments,must,yes,no,reuse aios-lms GST engine
 Admin dashboard: revenue/enrolments/learners,analytics,must,yes,partial,course list done; revenue/metrics next
-Learner list with progress,admin,must,yes,yes,
+Learner list with progress,admin,must,yes,no,M1
 Live classes: schedule Zoom/Meet + invite batch,live,should,yes,no,links in v1
 Live class recordings added back to batch,live,should,yes,no,
 Coupons / promo codes,payments,should,yes,no,aios-lms has coupon logic
