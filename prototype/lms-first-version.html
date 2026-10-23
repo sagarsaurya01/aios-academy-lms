@@ -1,0 +1,710 @@
+<title>AI OS Academy LMS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: app shell — top bar with role switch, a demo strip, then one content column per view */
+:root{
+  --bg:#f5f7f6; --surface:#ffffff; --sunk:#eef2f1; --fg:#13201d; --muted:#59665f; --line:#dae2df;
+  --accent:#0d6b62; --accent-fg:#ffffff; --accent-soft:#dfeeeb;
+  --good:#1d7438; --good-bg:#e0f2e5; --warn:#865800; --warn-bg:#f6ebcf; --bad:#a12d44; --bad-bg:#f8e2e7;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Instrument Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1716; --surface:#16201f; --sunk:#111a19; --fg:#e3ebe9; --muted:#9aa8a4; --line:#2a3735;
+  --accent:#5cc2b5; --accent-fg:#06201d; --accent-soft:#163330;
+  --good:#7fd69a; --good-bg:#16301f; --warn:#e7c463; --warn-bg:#332a12; --bad:#f08aa3; --bad-bg:#3a1a23; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1716; --surface:#16201f; --sunk:#111a19; --fg:#e3ebe9; --muted:#9aa8a4; --line:#2a3735;
+  --accent:#5cc2b5; --accent-fg:#06201d; --accent-soft:#163330;
+  --good:#7fd69a; --good-bg:#16301f; --warn:#e7c463; --warn-bg:#332a12; --bad:#f08aa3; --bad-bg:#3a1a23; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--fg); font:15px/1.55 var(--body)}
+.gut{padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.inner{max-width:1040px; margin:0 auto}
+h1,h2,h3{font-family:var(--display); line-height:1.15; margin:0; text-wrap:balance}
+h1{font-size:clamp(26px,4vw,34px); font-weight:700}
+h2{font-size:21px; font-weight:700}
+h3{font-size:17px; font-weight:600}
+p{margin:0}
+a{color:var(--accent)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.mono{font-family:var(--mono); font-size:12px; letter-spacing:.03em}
+.num{font-variant-numeric:tabular-nums}
+
+header.top{background:var(--surface); border-bottom:1px solid var(--line); position:sticky; top:env(safe-area-inset-top,0px); z-index:5}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--surface)}
+.bar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; padding-block:12px}
+.brand{display:flex; align-items:baseline; gap:8px; margin-right:auto}
+.brand b{font-family:var(--display); font-size:19px}
+.brand span{font:500 10px/1 var(--mono); text-transform:uppercase; letter-spacing:.08em; color:var(--muted)}
+.seg{display:inline-flex; background:var(--sunk); border:1px solid var(--line); border-radius:8px; padding:3px; gap:2px}
+.seg button{border:0; background:transparent; color:var(--muted); font:500 13px var(--body); padding:6px 11px; border-radius:6px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--fg); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+nav.tabs{display:flex; gap:4px; flex-wrap:wrap; padding-bottom:10px}
+nav.tabs button{border:0; background:none; color:var(--muted); font:500 14px var(--body); padding:6px 10px; border-radius:6px; cursor:pointer}
+nav.tabs button[aria-current="true"]{color:var(--accent); background:var(--accent-soft)}
+
+.demo{background:var(--warn-bg); color:var(--warn); font-size:13px}
+.demo .inner{display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; padding-block:8px}
+.demo button{margin-left:auto}
+
+main{padding-block:28px 64px}
+.stack{display:flex; flex-direction:column; gap:22px}
+.row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px}
+.two{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:22px; align-items:start}
+@media (max-width:820px){ .two{grid-template-columns:minmax(0,1fr)} }
+
+.btn{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--surface); color:var(--fg); font:500 14px var(--body); padding:8px 14px; border-radius:7px; cursor:pointer; text-decoration:none}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-fg)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{font-size:13px; padding:5px 10px}
+.btn.link{border:0; background:none; color:var(--accent); padding:0}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:18px; display:flex; flex-direction:column; gap:10px; min-width:0}
+.course-card .price{font-family:var(--display); font-size:20px; font-weight:700}
+.course-card .foot{margin-top:auto; display:flex; justify-content:space-between; align-items:center; gap:10px; padding-top:8px}
+.pill{display:inline-block; font:500 11px/1 var(--mono); letter-spacing:.04em; padding:5px 7px; border-radius:4px; background:var(--sunk); color:var(--muted); white-space:nowrap}
+.pill.acc{background:var(--accent-soft); color:var(--accent)}
+.pill.good{background:var(--good-bg); color:var(--good)}
+.pill.warn{background:var(--warn-bg); color:var(--warn)}
+.pill.bad{background:var(--bad-bg); color:var(--bad)}
+
+.prog{height:7px; background:var(--sunk); border-radius:9px; overflow:hidden; min-width:80px}
+.prog i{display:block; height:100%; background:var(--accent); border-radius:9px}
+
+.chapter{border:1px solid var(--line); border-radius:10px; background:var(--surface); overflow:hidden}
+.chapter > div:first-child{padding:12px 16px; background:var(--sunk); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.lesson{display:flex; align-items:center; gap:12px; padding:11px 16px; border-top:1px solid var(--line)}
+.lesson .t{flex:1; min-width:0}
+.tick{width:20px; height:20px; border-radius:50%; border:1.5px solid var(--line); flex:none; display:grid; place-items:center; font-size:12px; color:var(--accent-fg)}
+.tick.on{background:var(--accent); border-color:var(--accent)}
+
+.player{aspect-ratio:16/9; max-width:100%; border-radius:10px; background:linear-gradient(135deg,#0d3d39,#13201d); color:#e3ebe9; display:flex; flex-direction:column; justify-content:flex-end; padding:20px; gap:6px; position:relative}
+.player .play{position:absolute; inset:0; margin:auto; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.14); display:grid; place-items:center}
+.player .play::after{content:""; border-left:20px solid #fff; border-top:12px solid transparent; border-bottom:12px solid transparent; margin-left:6px}
+.prose{max-width:65ch; display:flex; flex-direction:column; gap:10px}
+
+table{border-collapse:collapse; width:100%; font-size:14px}
+th{font:500 11px/1.3 var(--mono); letter-spacing:.05em; text-transform:uppercase; color:var(--muted); text-align:left; padding:9px 12px; border-bottom:1px solid var(--line)}
+td{padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+.scroll table{min-width:560px}
+td.r, th.r{text-align:right}
+
+label{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted); min-width:0}
+input,select,textarea{font:15px var(--body); color:var(--fg); background:var(--surface); border:1px solid var(--line); border-radius:7px; padding:8px 10px; width:100%}
+textarea{min-height:140px; resize:vertical}
+.fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px}
+.q{display:flex; flex-direction:column; gap:8px}
+.q label{flex-direction:row; align-items:center; gap:8px; color:var(--fg); font-size:15px}
+.q input{width:auto}
+
+.chat{display:flex; flex-direction:column; gap:8px; max-height:300px; overflow:auto}
+.msg{padding:9px 12px; border-radius:9px; font-size:14px; max-width:92%}
+.msg.me{align-self:flex-end; background:var(--accent-soft)}
+.msg.ai{align-self:flex-start; background:var(--sunk)}
+
+.cert{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:clamp(22px,5vw,48px); text-align:center; display:flex; flex-direction:column; gap:12px; align-items:center; position:relative; overflow:hidden}
+.cert::before{content:""; position:absolute; inset:10px; border:1px solid var(--accent); border-radius:8px; opacity:.4; pointer-events:none}
+.cert .who{font-family:var(--display); font-size:clamp(28px,5vw,40px); font-weight:700; color:var(--accent)}
+
+.inv{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:clamp(16px,4vw,32px); display:flex; flex-direction:column; gap:16px}
+.inv .hd{display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line); padding-bottom:12px}
+.inv .parties{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px}
+
+.stat{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px}
+.stat div{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px; display:flex; flex-direction:column; gap:2px}
+.stat b{font-family:var(--display); font-size:24px}
+
+#modal{position:fixed; inset:0; z-index:20; background:rgba(8,16,15,.55); display:flex; align-items:flex-start; justify-content:center; overflow:auto; padding:max(24px, env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-right,0px)) 24px max(16px, env(safe-area-inset-left,0px))}
+#modal[hidden]{display:none!important}
+.sheet{background:var(--surface); border-radius:12px; width:100%; max-width:520px; padding:22px; display:flex; flex-direction:column; gap:14px; margin-top:4vh}
+.sum{background:var(--sunk); border-radius:8px; padding:12px 14px; display:flex; flex-direction:column; gap:4px; font-size:14px}
+.sum div{display:flex; justify-content:space-between; gap:12px}
+.sum .tot{font-weight:600; font-size:16px; border-top:1px solid var(--line); padding-top:6px; margin-top:4px}
+.note{font-size:13px; padding:10px 12px; border-radius:8px; background:var(--accent-soft); color:var(--fg)}
+.toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(20px + env(safe-area-inset-bottom,0px)); background:var(--fg); color:var(--bg); padding:10px 16px; border-radius:8px; font-size:14px; z-index:30}
+@media (prefers-reduced-motion:no-preference){ .toast{animation:up .2s ease-out} @keyframes up{from{transform:translate(-50%,8px); opacity:0}} }
+pre.wa{white-space:pre-wrap; font:14px/1.5 var(--body); background:var(--sunk); padding:12px; border-radius:8px; margin:0}
+</style>
+
+<div id="app"></div>
+<div id="modal" hidden></div>
+
+<script>
+/* ---------- Course content ---------- */
+const COURSES = [
+ { id:'c-taster', title:'Your First Hour with AI', short:'TASTER', price:0, mode:'Recorded', level:'Beginner',
+   blurb:'A free one-hour start: what AI can do for a small business, how to write a prompt, and five tasks to try this week.',
+   outcomes:['Know what AI is good and bad at','Write a four-part prompt','Save your first hour of work with AI'],
+   chapters:[{ title:'Getting started', unlock:0, lessons:[
+     {id:'t1', title:'What AI can and can\'t do for a small business', mins:8, text:'AI tools like ChatGPT and Claude are good at writing, summarising, translating and answering questions from documents you give them. They are weak at exact arithmetic on large data and they do not know facts about your business you never told them. Always check numbers and names before you send anything an AI tool wrote.'},
+     {id:'t2', title:'Writing a good prompt', mins:10, text:'A good prompt has four parts: the role you want the AI to play, the task, the context it needs, and the format of the answer. For example: You are my sales assistant. Write a polite WhatsApp reminder to a customer whose payment of Rs 45,000 is 15 days late. Keep it under 60 words, in Hinglish. The more context you give, the less you need to edit.'},
+     {id:'t3', title:'Five tasks to try this week', mins:7, text:'Try these five tasks: draft a reply to a customer complaint, summarise a long email thread, turn meeting notes into an action list, write a job post, and translate a product description into Hindi. Note how many minutes each one saved so you know where AI pays off.'}
+   ]}],
+   quiz:[
+     {q:'Which of these is AI weakest at?', o:['Summarising an email thread','Exact arithmetic on a large sheet','Translating a product description'], a:1},
+     {q:'What are the four parts of a good prompt?', o:['Role, task, context, format','Greeting, question, thanks, sign-off','Topic, length, tone, emoji'], a:0},
+     {q:'Before sending an AI-written message, you should…', o:['Send it as is','Check the numbers and names','Make it longer'], a:1}
+   ]},
+ { id:'c-owner', title:'AI for MSME Owners', short:'OWNER', price:4999, mode:'Recorded + live cohort', level:'Beginner',
+   batch:{start:'2026-11-07', live:'Saturdays, 11:00 AM on Zoom', seats:30, taken:18},
+   blurb:'Four weeks to find the repeat work in your business and hand it to AI: sales follow-up, reports, SOPs and a 30-day plan.',
+   outcomes:['Map where your week goes','Use AI for sales follow-up and WhatsApp','Read your numbers with AI','Leave with a 30-day AI plan'],
+   chapters:[
+    { title:'Week 1 · Where AI saves you time', unlock:0, lessons:[
+      {id:'o1', title:'Mapping your week: find the repeat work', mins:12, text:'List every task you or your staff do more than once a week. Mark each one as writing, checking, chasing or deciding. Writing and chasing tasks are the easiest to hand to AI first, for example quotations, payment reminders and follow-up messages.'},
+      {id:'o2', title:'AI for sales follow-up and WhatsApp', mins:14, text:'Give the AI your customer list with last order date and amount due, then ask it to draft a follow-up for each customer in your own tone. Keep a short style note, such as polite, Hinglish, under 60 words, and reuse it every time so messages sound like you.'}
+    ]},
+    { title:'Week 2 · Running the business with AI', unlock:7, lessons:[
+      {id:'o3', title:'Reading your numbers with AI', mins:15, text:'Export your sales and expense reports from Tally or Excel and ask the AI to explain month-on-month changes in plain language. Ask it to show which customers or items caused the change. Always cross-check the totals against the original report, because AI can misread large tables.'},
+      {id:'o4', title:'Writing SOPs your staff will follow', mins:11, text:'Record yourself explaining a task in Hindi or English, get a transcript, and ask the AI to turn it into a numbered SOP with checks at each step. Short SOPs with one action per step are followed far more often than long documents.'}
+    ]},
+    { title:'Week 3 · Your 30-day AI plan', unlock:14, lessons:[
+      {id:'o5', title:'Choosing the first three tasks to hand to AI', mins:10, text:'Pick three tasks that repeat every week, take at least two hours a month each, and have a clear right answer you can check. Assign one staff member to each task, measure hours saved after 30 days, and only then add the next three.'}
+    ]}],
+   quiz:[
+     {q:'Which tasks are easiest to hand to AI first?', o:['Deciding and negotiating','Writing and chasing','Hiring and firing'], a:1},
+     {q:'After AI explains your monthly numbers, you should…', o:['Cross-check totals against the original report','Delete the original report','Send it to the bank directly'], a:0},
+     {q:'A good first AI task…', o:['Happens once a year','Repeats weekly and can be checked','Has no clear right answer'], a:1}
+   ],
+   assignment:{prompt:'List three tasks in your business that repeat every week. For each one, write the exact prompt you would give an AI tool and estimate how many hours a month it could save.', keys:['prompt','hours','week','customer','sales','staff','invoice','whatsapp','report','follow']}},
+ { id:'c-staff', title:'AI for Accounts & Office Staff', short:'STAFF', price:2999, mode:'Recorded', level:'Beginner',
+   blurb:'For the people who run the office: faster emails, cleaner Excel data, tidy bank narrations, and three rules for checking AI\'s numbers.',
+   outcomes:['Write emails and letters in half the time','Clean Excel data with AI','Turn bank narrations into clean ledger names','Check AI output before it reaches the books'],
+   chapters:[
+    { title:'Everyday office work', unlock:0, lessons:[
+      {id:'s1', title:'Emails and letters in half the time', mins:9, text:'Paste the email you received, say who you are and what you want to reply, and ask for three versions: short, formal and friendly. Pick one and edit. For letters, keep a sample of your company letterhead wording so the AI copies the format.'},
+      {id:'s2', title:'Cleaning up Excel data with AI', mins:13, text:'Ask the AI to write the Excel formula instead of fixing the data by hand, for example a formula that splits a full name into first and last name or removes extra spaces. Test the formula on ten rows before applying it to the whole sheet.'}
+    ]},
+    { title:'Accounts work', unlock:0, lessons:[
+      {id:'s3', title:'Bank narrations and ledger names', mins:14, text:'Bank statement narrations like UPI/DR/123456/RAMESH TRADERS can be turned into clean ledger names. Give the AI your list of existing ledgers and ask it to match each narration to the closest ledger, and to mark anything it is not sure about instead of guessing.'},
+      {id:'s4', title:'Checking AI\'s numbers: the 3 rules', mins:8, text:'Rule one: totals must match the source. Rule two: every entry must trace back to a document. Rule three: anything the AI marked unsure is checked by a person. Never post AI output to the books without these three checks.'}
+    ]}],
+   quiz:[
+     {q:'For messy Excel data, it is better to ask AI for…', o:['A formula you can test','A new spreadsheet program','A summary paragraph'], a:0},
+     {q:'When AI is unsure which ledger a narration belongs to, it should…', o:['Guess the closest one','Mark it for a person to check','Create a new ledger'], a:1},
+     {q:'Which is NOT one of the 3 checking rules?', o:['Totals match the source','Every entry traces to a document','AI output can be posted directly'], a:2}
+   ],
+   assignment:{prompt:'Take one messy bank narration (for example UPI/DR/402918/SHREE BALAJI ENT/axis) and write the prompt you would use to turn it into a clean ledger name and narration. Then explain how you would check the result.', keys:['prompt','ledger','narration','check','total','document','unsure','bank','match']}},
+ { id:'c-agents', title:'Build Your First AI Agent', short:'AGENT', price:9999, mode:'Live cohort', level:'Intermediate', waitlist:true,
+   batch:{start:'2027-01-09', live:'Saturdays, 10:00 AM on Zoom', seats:20, taken:0},
+   blurb:'A live cohort for owners and managers ready to go past chat: build an agent that reads your documents and does a task end to end.',
+   outcomes:['Understand what an agent is','Connect AI to your files and tools','Ship one working agent for your business'],
+   chapters:[{ title:'Cohort outline', unlock:0, lessons:[
+     {id:'a1', title:'What an AI agent is, in plain words', mins:15, text:'An agent is an AI that can take steps on its own: read a file, look something up, write the result somewhere, and check its own work. You give it a goal and the tools it may use.'},
+     {id:'a2', title:'Giving the agent your documents', mins:20, text:'Agents work best on a small, clean folder of documents. Start with one process, such as answering customer questions from your price list and terms.'}
+   ]}],
+   quiz:[] }
+];
+const C = {}; COURSES.forEach(c => { C[c.id] = c; c.lessons = c.chapters.flatMap(ch => ch.lessons.map(l => ({...l, unlock:ch.unlock||0}))); });
+
+const STATES = ['West Bengal','Maharashtra','Delhi','Karnataka','Tamil Nadu','Gujarat','Telangana','Uttar Pradesh','Bihar','Jharkhand','Odisha','Assam','Rajasthan','Other state'];
+const COUPONS = { AIOS10:{label:'10% off', pct:10}, LAUNCH500:{label:'₹500 off', flat:500} };
+const SELLER = { name:'Aikigai Edtech LLP', place:'Kolkata, West Bengal', state:'West Bengal', gstin:'To be added before launch' };
+const SAC = '999293';
+const DAY = 86400000;
+
+/* ---------- State ---------- */
+const KEY = 'aios-lms-first-version-v1';
+function seed(){
+  return {
+    role:'student', view:'catalog', cid:null, lid:null, iid:null, dayOffset:0, invSeq:0,
+    me:{ name:'Priya Sen', email:'priya@example.com', state:'West Bengal' },
+    enr:{}, invoices:[], waitlist:[], chats:{},
+    company:{ name:'Example Traders Pvt Ltd', admin:'Rakesh Mehta', state:'Maharashtra', gstin:'',
+      seats:[
+        {id:1, course:'c-staff', name:'Sunita Patil', email:'sunita@example.com', progress:80},
+        {id:2, course:'c-staff', name:'Imran Shaikh', email:'imran@example.com', progress:35},
+        {id:3, course:'c-staff', name:'Deepa Nair', email:'deepa@example.com', progress:0},
+        {id:4, course:'c-staff', name:'', email:'', progress:0},
+        {id:5, course:'c-staff', name:'', email:'', progress:0}
+      ], nextSeat:6 },
+    subs:[
+      { id:'x1', who:'Amit Das', course:'c-owner', at:Date.now()-2*DAY, status:'pending',
+        text:'1. Payment reminders to 40 customers every Monday. Prompt: You are my accounts assistant, write a polite WhatsApp reminder in Hinglish for each customer in this list with amount due. Saves about 6 hours a month.\n2. Weekly sales report for my partner. Prompt: Explain the change in sales this week vs last week from this Excel export. Saves 3 hours a month.\n3. Quotations. Prompt: Draft a quotation from this enquiry using our price list. Saves 5 hours a month.' },
+      { id:'x2', who:'Neha Roy', course:'c-owner', at:Date.now()-1*DAY, status:'pending',
+        text:'Follow up with customers, make reports, and staff training. AI can help with all of these.' }
+    ],
+    classes:[
+      { id:'k1', course:'c-owner', title:'Kick-off: map your week', when:'2026-11-07T11:00', link:'https://zoom.us/' },
+      { id:'k2', course:'c-owner', title:'Live Q&A: AI for sales follow-up', when:'2026-11-14T11:00', link:'https://zoom.us/' },
+      { id:'k3', course:'c-taster', title:'Free workshop: your first prompts', when:'2026-10-18T18:00', link:'https://meet.google.com/', recording:true }
+    ]
+  };
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch(e){ S = seed(); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r2 = n => Math.round(n*100)/100;
+const rs = n => '₹' + Number(n).toLocaleString('en-IN', {minimumFractionDigits: n%1 ? 2 : 0, maximumFractionDigits:2});
+const dt = d => new Date(d).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+const dtt = d => new Date(d).toLocaleString('en-IN', {weekday:'short', day:'2-digit', month:'short', hour:'numeric', minute:'2-digit'});
+function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(), 2600); }
+
+function words(n){
+  const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const two = n => n<20 ? a[n] : b[Math.floor(n/10)] + (n%10 ? ' '+a[n%10] : '');
+  const three = n => (n>=100 ? a[Math.floor(n/100)]+' Hundred'+(n%100?' ':'') : '') + (n%100 ? two(n%100) : '');
+  if (n===0) return 'Zero';
+  const out=[]; const cr=Math.floor(n/1e7); n%=1e7; const lk=Math.floor(n/1e5); n%=1e5; const th=Math.floor(n/1000); n%=1000;
+  if (cr) out.push(three(cr)+' Crore'); if (lk) out.push(two(lk)+' Lakh'); if (th) out.push(two(th)+' Thousand'); if (n) out.push(three(n));
+  return out.join(' ');
+}
+function amountWords(x){ const r=Math.floor(x), p=Math.round((x-r)*100); return 'Indian Rupees '+words(r)+(p?' and '+words(p)+' Paise':'')+' Only'; }
+
+function quote({cid, qty=1, coupon='', state}){
+  const c=C[cid], gross=c.price*qty; let disc=0, note='';
+  if (qty>=10){ disc+=r2(gross*0.15); note='15% bulk discount (10+ seats)'; }
+  const cp=COUPONS[coupon.trim().toUpperCase()];
+  if (cp){ disc += cp.pct ? r2((gross-disc)*cp.pct/100) : Math.min(cp.flat, gross-disc); }
+  const taxable=r2(gross-disc), intra = state===SELLER.state;
+  const cgst = intra ? r2(taxable*0.09) : 0, sgst=cgst, igst = intra ? 0 : r2(taxable*0.18);
+  return { gross, disc, note, coupon: cp ? coupon.trim().toUpperCase() : '', couponBad: !!coupon.trim() && !cp, taxable, cgst, sgst, igst, total:r2(taxable+cgst+sgst+igst), intra };
+}
+function makeInvoice({cid, qty, q, buyer}){
+  S.invSeq++;
+  const inv = { no:'AIOS/26-27/'+String(S.invSeq).padStart(4,'0'), at:Date.now(), cid, qty, buyer, ...q, rate:C[cid].price };
+  S.invoices.push(inv); return inv;
+}
+
+function enr(cid){ return S.enr[cid]; }
+function daysIn(cid){ const e=enr(cid); return e ? Math.floor((Date.now()-e.at)/DAY) + S.dayOffset : 0; }
+function isOpen(cid, l){ return !!enr(cid) && l.unlock <= daysIn(cid); }
+function pct(cid){ const e=enr(cid); return e ? Math.round(e.done.length / C[cid].lessons.length * 100) : 0; }
+function eligible(cid){
+  const e=enr(cid), c=C[cid]; if (!e) return false;
+  return e.done.length===c.lessons.length && (e.quiz ?? -1) >= 2 && (!c.assignment || e.asg?.status==='approved');
+}
+function points(){
+  let p=0; for (const [cid,e] of Object.entries(S.enr)){ p += e.done.length*10; if ((e.quiz??0)>=2) p+=30; if (e.asg?.status==='approved') p+=50; if (e.cert) p+=100; } return p;
+}
+function aiMark(text, keys){
+  const t=text.toLowerCase(), hits=keys.filter(k=>t.includes(k)).length, len=text.trim().length;
+  let score = Math.min(10, 2 + Math.min(hits,5) + (len>350?3:len>180?2:len>80?1:0));
+  const notes=[];
+  if (!t.includes('prompt')) notes.push('Write out the exact prompt you would use, word for word.');
+  if (!/\d/.test(t)) notes.push('Add a number: hours saved, customers, or amounts. Owners decide on numbers.');
+  if (len<180) notes.push('Too short. Give each task its own line with detail.');
+  if (!notes.length) notes.push('Clear tasks, real prompts and numbers. Good work.');
+  return { score, notes };
+}
+function tutorAnswer(cid, q){
+  const stop=new Set(['what','how','the','and','for','with','can','does','this','that','you','your','are','is','do','i','a','to','of','in','my','me','it','should','which','when','why','about']);
+  const qw=q.toLowerCase().match(/[a-z0-9]+/g)?.filter(w=>w.length>2 && !stop.has(w)) || [];
+  let best=null, bs=0;
+  for (const l of C[cid].lessons){
+    for (const s of l.text.split(/(?<=\.)\s+/)){
+      const sl=s.toLowerCase(), sc=qw.filter(w=>sl.includes(w)).length;
+      if (sc>bs){ bs=sc; best={l, s}; }
+    }
+  }
+  if (!best) return 'I couldn\'t find that in this course. I\'ve noted it for your trainer to answer in the next live class.';
+  return best.s + ' (From the lesson "' + best.l.title + '")';
+}
+
+/* ---------- Views ---------- */
+const NAV = {
+  student:[['catalog','Courses'],['mine','My learning'],['board','Leaderboard'],['invoices','Invoices']],
+  company:[['seats','Seats & staff'],['invoices','Invoices']],
+  trainer:[['review','Review work'],['classes','Live classes'],['sales','Sales']]
+};
+function shell(body){
+  const nav = NAV[S.role].map(([v,l]) => `<button data-a="go" data-v="${v}" aria-current="${S.view===v || (v==='catalog' && ['course','lesson','quiz','asg','cert'].includes(S.view))}">${l}</button>`).join('');
+  return `
+  <header class="top gut"><div class="inner">
+    <div class="bar">
+      <div class="brand"><b>AI OS Academy</b><span>working name</span></div>
+      <div class="seg" role="group" aria-label="View as">
+        ${[['student','Student'],['company','Company admin'],['trainer','Trainer']].map(([r,l])=>`<button data-a="role" data-r="${r}" aria-pressed="${S.role===r}">${l}</button>`).join('')}
+      </div>
+    </div>
+    <nav class="tabs">${nav}</nav>
+  </div></header>
+  <div class="demo gut"><div class="inner">
+    <span><b>First version.</b> Payments, video and AI are simulated. Your clicks are saved in this browser only.</span>
+    <button class="btn sm" data-a="reset">Reset demo</button>
+  </div></div>
+  <main class="gut"><div class="inner">${body}</div></main>`;
+}
+
+function courseCard(c){
+  const e=enr(c.id);
+  const price = c.price ? `${rs(c.price)} <span class="muted small">+ GST</span>` : 'Free';
+  return `<article class="card course-card">
+    <div class="row"><span class="pill acc">${esc(c.mode)}</span><span class="pill">${c.level}</span>${c.waitlist?'<span class="pill warn">Waitlist</span>':''}</div>
+    <h3>${esc(c.title)}</h3>
+    <p class="muted">${esc(c.blurb)}</p>
+    ${c.batch ? `<p class="small muted">Batch starts ${dt(c.batch.start)} · ${esc(c.batch.live)}</p>` : ''}
+    ${e ? `<div class="row small"><div class="prog" style="flex:1"><i style="width:${pct(c.id)}%"></i></div>${pct(c.id)}%</div>` : ''}
+    <div class="foot"><span class="price">${price}</span><button class="btn ${e?'':'primary'}" data-a="open" data-c="${c.id}">${e?'Continue':'View course'}</button></div>
+  </article>`;
+}
+
+function vCatalog(){
+  return `<div class="stack">
+    <div class="stack" style="gap:8px"><h1>Practical AI for business owners and their teams</h1>
+    <p class="muted" style="max-width:60ch">Short recorded lessons, live classes in small batches, and work you can use in your business the same week.</p></div>
+    <div class="grid">${COURSES.map(courseCard).join('')}</div>
+  </div>`;
+}
+
+function vMine(){
+  const ids=Object.keys(S.enr);
+  if (!ids.length) return `<div class="card"><h2>No courses yet</h2><p class="muted">Start with the free taster. It takes an hour.</p><div><button class="btn primary" data-a="open" data-c="c-taster">Open the free taster</button></div></div>`;
+  return `<div class="stack"><h1>My learning</h1><div class="grid">${ids.map(id=>courseCard(C[id])).join('')}</div></div>`;
+}
+
+function vCourse(){
+  const c=C[S.cid], e=enr(c.id);
+  let cta;
+  if (c.waitlist) cta = S.waitlist.includes(c.id) ? `<span class="pill good">You're on the waitlist</span>` : `<button class="btn primary" data-a="waitlist" data-c="${c.id}">Join the waitlist</button>`;
+  else if (e) cta = `<span class="pill good">Enrolled ${dt(e.at)}</span>`;
+  else if (!c.price) cta = `<button class="btn primary" data-a="enrolFree" data-c="${c.id}">Enrol free</button>`;
+  else cta = `<button class="btn primary" data-a="buy" data-c="${c.id}">Buy for ${rs(c.price)} + GST</button>`;
+
+  const chapters = c.chapters.map(ch => `<div class="chapter">
+    <div><b>${esc(ch.title)}</b>${ch.unlock && e && ch.unlock>daysIn(c.id) ? `<span class="pill warn">Unlocks on day ${ch.unlock}</span>` : ch.unlock ? `<span class="pill">Day ${ch.unlock}</span>`:''}</div>
+    ${ch.lessons.map(l => { const L={...l, unlock:ch.unlock||0}; const open=isOpen(c.id,L), done=e?.done.includes(l.id);
+      return `<div class="lesson"><span class="tick ${done?'on':''}">${done?'✓':''}</span>
+        <div class="t"><div>${esc(l.title)}</div><div class="small muted">${l.mins} min video</div></div>
+        ${open ? `<button class="btn sm" data-a="lesson" data-l="${l.id}">${done?'Watch again':'Start'}</button>` : `<span class="pill">${e?'Locked':'Enrol to watch'}</span>`}
+      </div>`; }).join('')}
+  </div>`).join('');
+
+  const cls = S.classes.filter(k=>k.course===c.id).sort((a,b)=>a.when.localeCompare(b.when));
+  const classes = cls.length ? `<div class="card"><h3>Live classes</h3>${cls.map(k=>{ const past=new Date(k.when)<new Date();
+    return `<div class="row" style="justify-content:space-between; border-top:1px solid var(--line); padding-top:10px">
+      <div style="min-width:0"><div>${esc(k.title)}</div><div class="small muted">${dtt(k.when)}</div></div>
+      ${past ? (k.recording ? `<button class="btn sm" data-a="rec">Watch recording</button>` : `<span class="pill">Recording coming</span>`)
+             : (e ? `<a class="btn sm primary" href="${esc(k.link)}" target="_blank" rel="noopener">Join</a>` : `<span class="pill">For enrolled students</span>`)}
+    </div>`; }).join('')}</div>` : '';
+
+  const work = e ? `<div class="card"><h3>Your progress</h3>
+      <div class="row small"><div class="prog" style="flex:1"><i style="width:${pct(c.id)}%"></i></div><b class="num">${pct(c.id)}%</b></div>
+      <div class="stack" style="gap:8px">
+        ${c.quiz.length ? `<div class="row" style="justify-content:space-between"><span>Quiz ${e.quiz!=null?`<span class="pill ${e.quiz>=2?'good':'bad'}">${e.quiz}/${c.quiz.length}</span>`:''}</span><button class="btn sm" data-a="quiz">${e.quiz!=null?'Retake':'Take quiz'}</button></div>`:''}
+        ${c.assignment ? `<div class="row" style="justify-content:space-between"><span>Assignment ${e.asg ? `<span class="pill ${e.asg.status==='approved'?'good':'warn'}">${e.asg.status==='approved'?'Approved '+e.asg.final+'/10':'Waiting for trainer'}</span>`:''}</span><button class="btn sm" data-a="asg">${e.asg?'View':'Submit'}</button></div>`:''}
+        <div class="row" style="justify-content:space-between"><span>Certificate</span>${e.cert?`<button class="btn sm primary" data-a="cert">View</button>`:`<button class="btn sm" data-a="getCert" ${eligible(c.id)?'':'disabled'}>Get certificate</button>`}</div>
+        ${!eligible(c.id) && !e.cert ? `<p class="small muted">Finish all lessons, score 2+ in the quiz${c.assignment?', and get your assignment approved':''}.</p>`:''}
+        ${c.chapters.some(ch=>ch.unlock) ? `<p class="small muted">You are on day ${daysIn(c.id)} of this batch. <button class="btn link small" data-a="skip">Demo: jump a week ahead</button></p>`:''}
+      </div></div>` : '';
+
+  const tutor = e ? `<div class="card"><h3>Ask the AI tutor</h3><p class="small muted">Answers come only from this course's lessons.</p>
+      <div class="chat" id="chat">${(S.chats[c.id]||[]).map(m=>`<div class="msg ${m.me?'me':'ai'}">${esc(m.t)}</div>`).join('') || '<div class="msg ai">Ask me anything about this course. Try: "how do I check AI numbers?"</div>'}</div>
+      <form data-f="ask" class="row"><input id="askq" name="q" placeholder="Type a question" style="flex:1; min-width:0" autocomplete="off"><button class="btn primary">Ask</button></form></div>` : '';
+
+  return `<div class="stack">
+    <button class="btn link" data-a="go" data-v="catalog">← All courses</button>
+    <div class="two">
+      <div class="stack">
+        <div class="stack" style="gap:10px">
+          <div class="row"><span class="pill acc">${esc(c.mode)}</span><span class="pill">${c.level}</span><span class="pill">${c.lessons.length} lessons</span></div>
+          <h1>${esc(c.title)}</h1><p class="muted" style="max-width:62ch">${esc(c.blurb)}</p>
+          ${c.batch ? `<p class="small">Batch starts <b>${dt(c.batch.start)}</b> · ${esc(c.batch.live)} · ${c.batch.seats-c.batch.taken} of ${c.batch.seats} seats left</p>`:''}
+          <div class="row">${cta}${c.price && !c.waitlist ? `<button class="btn" data-a="go" data-v="seatsBuy" data-c="${c.id}">Buying for your team?</button>`:''}</div>
+        </div>
+        <div class="card"><h3>You will learn to</h3><ul style="margin:0; padding-left:20px">${c.outcomes.map(o=>`<li>${esc(o)}</li>`).join('')}</ul></div>
+        <h2>Course content</h2>${chapters}
+      </div>
+      <div class="stack">${work}${classes}${tutor}</div>
+    </div>
+  </div>`;
+}
+
+function vLesson(){
+  const c=C[S.cid], i=c.lessons.findIndex(l=>l.id===S.lid), l=c.lessons[i], e=enr(c.id), done=e.done.includes(l.id);
+  const prev=c.lessons[i-1], next=c.lessons[i+1];
+  return `<div class="stack" style="max-width:820px">
+    <button class="btn link" data-a="open" data-c="${c.id}">← ${esc(c.title)}</button>
+    <div class="player"><div class="play" aria-hidden="true"></div><span class="mono" style="opacity:.7">LESSON ${i+1} OF ${c.lessons.length} · ${l.mins} MIN</span><b style="font-size:18px">${esc(l.title)}</b><span class="small" style="opacity:.7">Video plays here. Videos are watermarked with the student's name.</span></div>
+    <div class="prose"><h2>${esc(l.title)}</h2><p>${esc(l.text)}</p></div>
+    <div class="row" style="justify-content:space-between">
+      <div class="row">${prev && isOpen(c.id,prev)?`<button class="btn" data-a="lesson" data-l="${prev.id}">← Previous</button>`:''}</div>
+      <div class="row">
+        ${done ? '<span class="pill good">Completed · +10 points</span>' : `<button class="btn primary" data-a="done" data-l="${l.id}">Mark as complete</button>`}
+        ${next ? (isOpen(c.id,next) ? `<button class="btn" data-a="lesson" data-l="${next.id}">Next →</button>` : `<span class="pill warn">Next lesson unlocks on day ${next.unlock}</span>`) : (c.quiz.length?`<button class="btn" data-a="quiz">Take the quiz →</button>`:'')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function vQuiz(){
+  const c=C[S.cid], e=enr(c.id);
+  return `<div class="stack" style="max-width:720px">
+    <button class="btn link" data-a="open" data-c="${c.id}">← ${esc(c.title)}</button>
+    <h1>Quiz</h1><p class="muted">${c.quiz.length} questions. Score 2 or more to pass.${e.quiz!=null?` Your last score: ${e.quiz}/${c.quiz.length}.`:''}</p>
+    <form data-f="quiz" class="stack">
+      ${c.quiz.map((q,qi)=>`<fieldset class="card q" style="margin:0"><legend class="small muted" style="padding:0 4px">Question ${qi+1}</legend><b>${esc(q.q)}</b>
+        ${q.o.map((o,oi)=>`<label><input type="radio" name="q${qi}" value="${oi}" id="q${qi}o${oi}" required> ${esc(o)}</label>`).join('')}</fieldset>`).join('')}
+      <div><button class="btn primary">Submit answers</button></div>
+    </form></div>`;
+}
+
+function vAsg(){
+  const c=C[S.cid], e=enr(c.id), a=e.asg;
+  const body = a ? `<div class="card"><h3>Your answer</h3><p style="white-space:pre-wrap">${esc(a.text)}</p></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h3>AI marking</h3><span class="pill acc">Suggested ${a.ai.score}/10</span></div>
+      <ul style="margin:0; padding-left:20px">${a.ai.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>
+      <p class="small muted">${a.status==='approved' ? `Approved by your trainer with ${a.final}/10.` : 'Your trainer reviews this suggestion before it becomes final. Switch to Trainer at the top to try that.'}</p></div>
+    ${a.status!=='approved' ? `<div><button class="btn" data-a="resubmit">Edit and resubmit</button></div>`:''}`
+  : `<form data-f="asg" class="stack"><label for="asgtext">Your answer<textarea id="asgtext" name="t" required placeholder="Write your answer here"></textarea></label><div><button class="btn primary">Submit for marking</button></div></form>`;
+  return `<div class="stack" style="max-width:760px">
+    <button class="btn link" data-a="open" data-c="${c.id}">← ${esc(c.title)}</button>
+    <h1>Assignment</h1><div class="note">${esc(c.assignment.prompt)}</div>${body}</div>`;
+}
+
+function vCert(){
+  const c=C[S.cid], e=enr(c.id), k=e.cert;
+  const li = 'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name='+encodeURIComponent(c.title)+'&organizationName='+encodeURIComponent('AI OS Academy')+'&issueYear='+new Date(k.at).getFullYear()+'&issueMonth='+(new Date(k.at).getMonth()+1)+'&certId='+k.id;
+  return `<div class="stack" style="max-width:820px">
+    <button class="btn link" data-a="open" data-c="${c.id}">← ${esc(c.title)}</button>
+    <div class="cert">
+      <span class="mono muted">CERTIFICATE OF COMPLETION</span>
+      <p class="muted">This certifies that</p>
+      <div class="who">${esc(S.me.name)}</div>
+      <p class="muted">has completed</p>
+      <h2>${esc(c.title)}</h2>
+      <p class="small muted">${c.lessons.length} lessons${c.assignment?' · assessed assignment':''} · Issued ${dt(k.at)}</p>
+      <p class="mono muted">ID ${k.id} · Aikigai Edtech LLP</p>
+    </div>
+    <div class="row"><a class="btn primary" href="${li}" target="_blank" rel="noopener">Add to LinkedIn</a><span class="small muted">Anyone can check the ID on our site (planned).</span></div>
+  </div>`;
+}
+
+function vBoard(){
+  const peers=[['Amit Das',340],['Neha Roy',290],['Farhan Ali',210],['Kavita Jain',150],[S.me.name+' (you)',points()]].sort((a,b)=>b[1]-a[1]);
+  return `<div class="stack" style="max-width:640px"><h1>Leaderboard</h1>
+    <p class="muted">Points: 10 per lesson, 30 for passing a quiz, 50 for an approved assignment, 100 for a certificate. Other names are examples.</p>
+    <div class="scroll"><table><thead><tr><th>#</th><th>Learner</th><th class="r">Points</th></tr></thead><tbody>
+    ${peers.map((p,i)=>`<tr${p[0].includes('(you)')?' style="background:var(--accent-soft)"':''}><td class="num">${i+1}</td><td>${esc(p[0])}</td><td class="r num"><b>${p[1]}</b></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+function invoiceRows(list){
+  if (!list.length) return `<div class="card"><p class="muted">No invoices yet. Every purchase creates a GST invoice here automatically.</p></div>`;
+  return `<div class="scroll"><table><thead><tr><th>Invoice</th><th>Date</th><th>Buyer</th><th>Course</th><th class="r">Total</th><th></th></tr></thead><tbody>
+    ${list.slice().reverse().map(v=>`<tr><td class="mono">${v.no}</td><td>${dt(v.at)}</td><td>${esc(v.buyer.name)}</td><td>${esc(C[v.cid].title)}${v.qty>1?` × ${v.qty}`:''}</td><td class="r num">${rs(v.total)}</td><td><button class="btn sm" data-a="inv" data-i="${v.no}">Open</button></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function vInvoices(){
+  const list = S.role==='company' ? S.invoices.filter(v=>v.buyer.company) : S.role==='student' ? S.invoices.filter(v=>!v.buyer.company) : S.invoices;
+  return `<div class="stack"><h1>Invoices</h1>${invoiceRows(list)}</div>`;
+}
+function vInvoice(){
+  const v=S.invoices.find(x=>x.no===S.iid);
+  return `<div class="stack" style="max-width:820px">
+    <button class="btn link" data-a="go" data-v="invoices">← Invoices</button>
+    <div class="inv">
+      <div class="hd"><div><h2>Tax Invoice</h2><div class="mono muted">${v.no}</div></div><div class="small" style="text-align:right">Date ${dt(v.at)}<br>Place of supply: ${esc(v.buyer.state)}</div></div>
+      <div class="parties">
+        <div><div class="mono muted">FROM</div><b>${SELLER.name}</b><div class="small">${SELLER.place}<br>GSTIN: ${SELLER.gstin}</div></div>
+        <div><div class="mono muted">BILL TO</div><b>${esc(v.buyer.name)}</b><div class="small">${esc(v.buyer.email)}<br>${esc(v.buyer.state)}${v.buyer.gstin?`<br>GSTIN: ${esc(v.buyer.gstin)}`:''}</div></div>
+      </div>
+      <div class="scroll" style="border:0"><table>
+        <thead><tr><th>Description</th><th>SAC</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+        <tbody><tr><td>${esc(C[v.cid].title)} ${v.qty>1?'(company seats)':'(online course)'}</td><td class="mono">${SAC}</td><td class="r num">${v.qty}</td><td class="r num">${rs(v.rate)}</td><td class="r num">${rs(v.gross)}</td></tr></tbody>
+      </table></div>
+      <div class="sum" style="margin-left:auto; min-width:min(300px,100%)">
+        <div><span>Gross</span><span class="num">${rs(v.gross)}</span></div>
+        ${v.disc?`<div><span>Discount${v.coupon?` (${v.coupon})`:''}${v.note?` · ${v.note}`:''}</span><span class="num">− ${rs(v.disc)}</span></div>`:''}
+        <div><span>Taxable value</span><span class="num">${rs(v.taxable)}</span></div>
+        ${v.intra?`<div><span>CGST 9%</span><span class="num">${rs(v.cgst)}</span></div><div><span>SGST 9%</span><span class="num">${rs(v.sgst)}</span></div>`:`<div><span>IGST 18%</span><span class="num">${rs(v.igst)}</span></div>`}
+        <div class="tot"><span>Total</span><span class="num">${rs(v.total)}</span></div>
+      </div>
+      <p class="small"><b>Amount in words:</b> ${amountWords(v.total)}</p>
+      <p class="small muted">Paid online via Razorpay (test mode). Computer-generated invoice.</p>
+    </div></div>`;
+}
+
+/* company */
+function vSeats(){
+  const co=S.company, used=co.seats.filter(s=>s.email), byCourse={};
+  co.seats.forEach(s=>{ (byCourse[s.course] ||= []).push(s); });
+  return `<div class="stack">
+    <div class="row" style="justify-content:space-between"><div class="stack" style="gap:4px"><h1>${esc(co.name)}</h1><p class="muted">Company admin: ${esc(co.admin)} · ${esc(co.state)}</p></div>
+      <div class="row"><button class="btn" data-a="report">Monthly report</button><button class="btn primary" data-a="buySeats">Buy seats</button></div></div>
+    <div class="stat">
+      <div><span class="small muted">Seats bought</span><b class="num">${co.seats.length}</b></div>
+      <div><span class="small muted">In use</span><b class="num">${used.length}</b></div>
+      <div><span class="small muted">Free to assign</span><b class="num">${co.seats.length-used.length}</b></div>
+      <div><span class="small muted">Average progress</span><b class="num">${used.length?Math.round(used.reduce((a,s)=>a+s.progress,0)/used.length):0}%</b></div>
+    </div>
+    ${Object.entries(byCourse).map(([cid,list])=>`<h2>${esc(C[cid].title)}</h2>
+      <div class="scroll"><table><thead><tr><th>Staff member</th><th>Email</th><th>Progress</th><th></th></tr></thead><tbody>
+      ${list.map(s=> s.email ? `<tr><td>${esc(s.name)}</td><td>${esc(s.email)}</td><td><div class="row small"><div class="prog" style="width:110px"><i style="width:${s.progress}%"></i></div><span class="num">${s.progress}%</span>${s.progress===0?'<span class="pill warn">Not started</span>':s.progress===100?'<span class="pill good">Done</span>':''}</div></td><td class="r"><button class="btn sm" data-a="unassign" data-s="${s.id}">Free this seat</button></td></tr>`
+        : `<tr><td colspan="4"><form data-f="assign" data-s="${s.id}" class="row"><span class="pill">Free seat</span><input name="n" placeholder="Name" required style="flex:1; min-width:120px"><input name="e" type="email" placeholder="Email" required style="flex:1; min-width:160px"><button class="btn sm primary">Give seat</button></form></td></tr>`).join('')}
+      </tbody></table></div>`).join('')}
+    <p class="small muted">If someone leaves, free their seat and give it to someone else. <button class="btn link small" data-a="simWeek">Demo: simulate a week of learning</button></p>
+  </div>`;
+}
+
+/* trainer */
+function vReview(){
+  const list=S.subs.slice().sort((a,b)=>(a.status==='pending'?0:1)-(b.status==='pending'?0:1) || b.at-a.at);
+  return `<div class="stack" style="max-width:860px"><h1>Review work</h1>
+    <p class="muted">AI marks every assignment first. You approve or change the score before the student sees it as final.</p>
+    ${list.map(s=>{ const ai=s.ai || aiMark(s.text, C[s.course].assignment.keys);
+      return `<div class="card">
+        <div class="row" style="justify-content:space-between"><div><b>${esc(s.who)}</b> <span class="small muted">· ${esc(C[s.course].title)} · ${dt(s.at)}</span></div>
+        ${s.status==='approved'?`<span class="pill good">Approved ${s.final}/10</span>`:'<span class="pill warn">Waiting</span>'}</div>
+        <p style="white-space:pre-wrap" class="small">${esc(s.text)}</p>
+        <div class="note"><b>AI suggests ${ai.score}/10.</b> ${ai.notes.map(esc).join(' ')}</div>
+        ${s.status!=='approved'?`<form data-f="approve" data-s="${s.id}" class="row"><label style="flex-direction:row; align-items:center; gap:8px">Final score <input name="sc" type="number" min="0" max="10" value="${ai.score}" style="width:72px"></label><button class="btn primary sm">Approve</button></form>`:''}
+      </div>`; }).join('')}
+  </div>`;
+}
+function vClasses(){
+  const list=S.classes.slice().sort((a,b)=>a.when.localeCompare(b.when));
+  return `<div class="stack" style="max-width:860px"><h1>Live classes</h1>
+    <div class="scroll"><table><thead><tr><th>When</th><th>Class</th><th>Course</th><th>Link</th></tr></thead><tbody>
+      ${list.map(k=>`<tr><td>${dtt(k.when)}</td><td>${esc(k.title)}</td><td>${esc(C[k.course].title)}</td><td><a href="${esc(k.link)}" target="_blank" rel="noopener">${new URL(k.link).hostname.replace('www.','')}</a></td></tr>`).join('')}
+    </tbody></table></div>
+    <form data-f="class" class="card"><h3>Schedule a class</h3>
+      <div class="fields">
+        <label for="kc">Course<select id="kc" name="c">${COURSES.map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('')}</select></label>
+        <label for="kt">Title<input id="kt" name="t" required placeholder="e.g. Live Q&A"></label>
+        <label for="kw">Date and time<input id="kw" name="w" type="datetime-local" required></label>
+        <label for="kl">Zoom or Meet link<input id="kl" name="l" type="url" required placeholder="https://zoom.us/j/…"></label>
+      </div>
+      <p class="small muted">Everyone enrolled in the course sees it on their course page with a Join button.</p>
+      <div><button class="btn primary">Add class</button></div></form></div>`;
+}
+function vSales(){
+  const inv=S.invoices, taxable=inv.reduce((a,v)=>a+v.taxable,0), gst=inv.reduce((a,v)=>a+v.cgst+v.sgst+v.igst,0);
+  const enrols = Object.keys(S.enr).length + S.company.seats.filter(s=>s.email).length;
+  return `<div class="stack"><h1>Sales</h1>
+    <div class="stat">
+      <div><span class="small muted">Revenue (before GST)</span><b class="num">${rs(r2(taxable))}</b></div>
+      <div><span class="small muted">GST collected</span><b class="num">${rs(r2(gst))}</b></div>
+      <div><span class="small muted">Invoices</span><b class="num">${inv.length}</b></div>
+      <div><span class="small muted">Active learners</span><b class="num">${enrols}</b></div>
+    </div>
+    <p class="small muted">Counts what was bought in this demo. Buy a course as a student or seats as a company admin to see it change.</p>
+    ${invoiceRows(inv)}</div>`;
+}
+
+const VIEWS = { catalog:vCatalog, mine:vMine, course:vCourse, lesson:vLesson, quiz:vQuiz, asg:vAsg, cert:vCert, board:vBoard, invoices:vInvoices, invoice:vInvoice, seats:vSeats, review:vReview, classes:vClasses, sales:vSales };
+function render(){ $('#app').innerHTML = shell((VIEWS[S.view]||vCatalog)()); save(); const ch=$('#chat'); if (ch) ch.scrollTop=ch.scrollHeight; }
+
+/* ---------- Checkout ---------- */
+let CK=null;
+function openCheckout(ck){ CK=ck; $('#modal').innerHTML=sheetCheckout(); $('#modal').hidden=false; updSum(); $('#modal input')?.focus(); }
+function closeModal(){ $('#modal').hidden=true; $('#modal').innerHTML=''; CK=null; }
+function sheetCheckout(){
+  const c=C[CK.cid], co=CK.company;
+  return `<form class="sheet" data-f="pay" role="dialog" aria-modal="true" aria-label="Checkout">
+    <div class="row" style="justify-content:space-between"><h2>${co?'Buy seats':'Checkout'}</h2><button type="button" class="btn sm" data-a="close">Close</button></div>
+    ${co ? `<label for="ckc">Course<select id="ckc" name="cid" data-ck>${COURSES.filter(x=>x.price && !x.waitlist).map(x=>`<option value="${x.id}" ${x.id===CK.cid?'selected':''}>${esc(x.title)} · ${rs(x.price)}/seat</option>`).join('')}</select></label>
+      <label for="ckq">Number of seats<input id="ckq" name="qty" type="number" min="1" max="500" value="${CK.qty||5}" data-ck></label>`
+      : `<div><b>${esc(c.title)}</b><div class="small muted">${esc(c.mode)}</div></div>`}
+    <div class="fields">
+      <label for="ckn">${co?'Company name':'Your name'}<input id="ckn" name="name" required value="${esc(co?S.company.name:S.me.name)}"></label>
+      <label for="cke">Email<input id="cke" name="email" type="email" required value="${esc(co?'accounts@example.com':S.me.email)}"></label>
+      <label for="cks">State<select id="cks" name="state" data-ck>${STATES.map(s=>`<option ${s===(co?S.company.state:S.me.state)?'selected':''}>${s}</option>`).join('')}</select></label>
+      <label for="ckg">GSTIN (optional)<input id="ckg" name="gstin" maxlength="15" placeholder="For input tax credit" value="${esc(co?S.company.gstin:'')}"></label>
+    </div>
+    <div class="row"><input id="ckcp" name="coupon" placeholder="Coupon code (try AIOS10)" style="flex:1; min-width:0" data-ck></div>
+    <div class="sum" id="sum"></div>
+    <button class="btn primary" style="justify-content:center">Pay with Razorpay (test)</button>
+    <p class="small muted">UPI, cards, net banking and EMI through Razorpay. A GST invoice is created as soon as payment succeeds.</p>
+  </form>`;
+}
+function ckVals(){ const f=$('#modal form'); return { cid: f.cid?.value || CK.cid, qty: +(f.qty?.value||1) || 1, coupon:f.coupon.value, state:f.state.value }; }
+function updSum(){
+  const v=ckVals(), q=quote(v);
+  $('#sum').innerHTML = `<div><span>${v.qty>1?`${v.qty} seats × ${rs(C[v.cid].price)}`:'Course fee'}</span><span class="num">${rs(q.gross)}</span></div>
+    ${q.disc?`<div><span>Discount${q.coupon?` (${q.coupon})`:''}${q.note?` · ${q.note}`:''}</span><span class="num">− ${rs(q.disc)}</span></div>`:''}
+    ${q.couponBad?`<div style="color:var(--bad)"><span>That coupon code isn't valid</span><span></span></div>`:''}
+    ${q.intra?`<div><span>CGST 9% + SGST 9%</span><span class="num">${rs(q.cgst+q.sgst)}</span></div>`:`<div><span>IGST 18%</span><span class="num">${rs(q.igst)}</span></div>`}
+    <div class="tot"><span>You pay</span><span class="num">${rs(q.total)}</span></div>`;
+}
+
+/* ---------- Actions ---------- */
+const go = v => { S.view=v; render(); window.scrollTo(0,0); };
+const A = {
+  role:d=>{ S.role=d.r; S.view=NAV[d.r][0][0]; render(); },
+  go:d=>{ if (d.v==='seatsBuy'){ S.role='company'; S.view='seats'; render(); openCheckout({company:true, cid:d.c, qty:5}); return; } go(d.v); },
+  reset:()=>{ S=seed(); save(); render(); toast('Demo reset'); },
+  open:d=>{ S.cid=d.c; go('course'); },
+  lesson:d=>{ S.lid=d.l; go('lesson'); },
+  done:d=>{ const e=enr(S.cid); if (!e.done.includes(d.l)) e.done.push(d.l); toast('Lesson complete · +10 points'); render(); },
+  quiz:()=>go('quiz'), asg:()=>go('asg'), cert:()=>go('cert'),
+  enrolFree:d=>{ S.enr[d.c]={at:Date.now(), done:[], quiz:null, asg:null, cert:null}; toast('Enrolled. Start your first lesson.'); render(); },
+  buy:d=>openCheckout({cid:d.c}),
+  buySeats:()=>openCheckout({company:true, cid:'c-staff', qty:5}),
+  close:closeModal,
+  waitlist:d=>{ S.waitlist.push(d.c); toast('You\'re on the waitlist. We\'ll email you when the batch opens.'); render(); },
+  skip:()=>{ S.dayOffset+=7; toast('Moved one week ahead'); render(); },
+  rec:()=>toast('The recording opens in the video player here.'),
+  resubmit:()=>{ const e=enr(S.cid); S.subs=S.subs.filter(s=>!(s.mine && s.course===S.cid)); e.asg=null; render(); },
+  getCert:()=>{ const e=enr(S.cid); e.cert={ at:Date.now(), id:'AIOS-'+C[S.cid].short+'-'+Math.random().toString(36).slice(2,8).toUpperCase() }; go('cert'); },
+  inv:d=>{ S.iid=d.i; go('invoice'); },
+  unassign:d=>{ const s=S.company.seats.find(x=>x.id==d.s); s.name=''; s.email=''; s.progress=0; toast('Seat is free to give to someone else'); render(); },
+  simWeek:()=>{ S.company.seats.forEach(s=>{ if (s.email) s.progress=Math.min(100, s.progress+[10,15,20][s.id%3]); }); toast('A week of learning added'); render(); },
+  report:()=>{
+    const co=S.company, by={}; co.seats.forEach(s=>(by[s.course] ||= []).push(s));
+    const month=new Date().toLocaleDateString('en-IN',{month:'long', year:'numeric'});
+    let t=`*${co.name}* · AI training report, ${month}\n`;
+    for (const [cid,list] of Object.entries(by)){
+      const u=list.filter(s=>s.email);
+      t+=`\n*${C[cid].title}*: ${u.length} of ${list.length} seats in use\n`;
+      u.sort((a,b)=>b.progress-a.progress).forEach(s=>{ t+=`• ${s.name}: ${s.progress}%${s.progress===0?' (not started)':s.progress===100?' (completed)':''}\n`; });
+      if (list.length-u.length) t+=`• ${list.length-u.length} seat(s) not given to anyone yet\n`;
+    }
+    t+=`\nReply to this message to add staff or buy more seats.`;
+    $('#modal').innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Monthly report"><div class="row" style="justify-content:space-between"><h2>Monthly report</h2><button class="btn sm" data-a="close">Close</button></div>
+      <p class="small muted">Sent to the owner on WhatsApp and email on the 1st of every month. Preview:</p><pre class="wa" id="wa">${esc(t)}</pre>
+      <div><button class="btn" data-a="copyRep">Copy text</button></div></div>`;
+    $('#modal').hidden=false;
+  },
+  copyRep:()=>{ const t=$('#wa').textContent; navigator.clipboard?.writeText(t).then(()=>toast('Copied'), ()=>{ const r=document.createRange(); r.selectNodeContents($('#wa')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Press Ctrl+C to copy'); }); }
+};
+const F = {
+  ask:f=>{ const q=f.q.value.trim(); if(!q) return; (S.chats[S.cid] ||= []).push({me:1,t:q},{t:tutorAnswer(S.cid,q)}); render(); $('#askq')?.focus(); },
+  quiz:f=>{ const c=C[S.cid]; let sc=0; c.quiz.forEach((q,i)=>{ if (+f['q'+i].value===q.a) sc++; }); const e=enr(S.cid); e.quiz=Math.max(sc, e.quiz??0);
+    toast(sc>=2?`Passed: ${sc}/${c.quiz.length}`:`${sc}/${c.quiz.length}. Score 2 or more to pass. Try again.`); S.view='course'; render(); },
+  asg:f=>{ const t=f.t.value.trim(), c=C[S.cid], ai=aiMark(t, c.assignment.keys), e=enr(S.cid);
+    e.asg={text:t, ai, status:'pending'}; S.subs.push({id:'m'+Date.now(), mine:true, who:S.me.name, course:S.cid, at:Date.now(), text:t, ai, status:'pending'});
+    toast('Submitted. AI has marked it; your trainer will approve.'); render(); },
+  approve:f=>{ const s=S.subs.find(x=>x.id===f.dataset.s), sc=Math.max(0,Math.min(10, +f.sc.value||0)); s.status='approved'; s.final=sc;
+    if (s.mine && enr(s.course)?.asg){ enr(s.course).asg.status='approved'; enr(s.course).asg.final=sc; }
+    toast('Approved. The student can see the final score.'); render(); },
+  class:f=>{ S.classes.push({id:'k'+Date.now(), course:f.c.value, title:f.t.value.trim(), when:f.w.value, link:f.l.value}); toast('Class added. Students see it on the course page.'); render(); },
+  assign:f=>{ const s=S.company.seats.find(x=>x.id==f.dataset.s); s.name=f.n.value.trim(); s.email=f.e.value.trim(); s.progress=0; toast(`Seat given. ${s.name} gets a login email.`); render(); },
+  pay:f=>{
+    const v=ckVals(), q=quote(v), co=CK.company;
+    const buyer={ name:f.name.value.trim(), email:f.email.value.trim(), state:v.state, gstin:f.gstin.value.trim().toUpperCase(), company:!!co };
+    const inv=makeInvoice({cid:v.cid, qty:v.qty, q, buyer});
+    if (co){ for (let i=0;i<v.qty;i++) S.company.seats.push({id:S.company.nextSeat++, course:v.cid, name:'', email:'', progress:0}); S.company.gstin=buyer.gstin; }
+    else { S.enr[v.cid]={at:Date.now(), done:[], quiz:null, asg:null, cert:null, invoice:inv.no}; S.me.state=v.state; }
+    closeModal(); toast(`Payment successful · Invoice ${inv.no} created`); render();
+  }
+};
+document.addEventListener('click', e=>{
+  if (e.target.id==='modal'){ closeModal(); return; }
+  const t=e.target.closest('[data-a]'); if (!t) return;
+  e.preventDefault(); A[t.dataset.a]?.(t.dataset, t);
+});
+document.addEventListener('submit', e=>{ const f=e.target.closest('[data-f]'); if (!f) return; e.preventDefault(); F[f.dataset.f]?.(f); });
+document.addEventListener('input', e=>{ if (e.target.closest('#modal') && e.target.hasAttribute('data-ck')) updSum(); });
+document.addEventListener('change', e=>{ if (e.target.closest('#modal') && e.target.hasAttribute('data-ck')) updSum(); });
+document.addEventListener('keydown', e=>{ if (e.key==='Escape' && !$('#modal').hidden) closeModal(); });
+render();
+</script>

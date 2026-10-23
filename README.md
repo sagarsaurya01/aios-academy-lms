@@ -47,3 +47,15 @@ M2 B2B seats + AI marking + live classes; M3 white-label + analytics. See
 
 Being a Next.js server app, it hosts on Vercel (not GitHub Pages) once the
 Supabase backend is wired.
+
+## Earlier prototype & blueprint
+
+The first clickable prototype and the 10-platform feature blueprint (originally
+in the `aios-lms` repo, now merged here) live in [`prototype/`](prototype/):
+- `prototype/lms-first-version.html` — the single-file clickable prototype
+  (student / company-admin / trainer views; GST, seats, AI marking simulated).
+- `prototype/LMS Blueprint - Features and Phases.html` — features from 10 course
+  platforms, sorted into Phase 1 / 2 / 3, with the three "gap" edges.
+
+The live app in this repo is the real build (Edmingle-clone approach); the
+prototype is kept here for reference.
