@@ -11,9 +11,16 @@ export default function AdminPage({ searchParams }: { searchParams: { error?: st
   if (me.role !== "admin") return <Shell user={me}><div className="card">Admin only. Switch to Sagar (admin) up top.</div></Shell>;
 
   const courses = getCourses();
+  const published = courses.filter((c) => c.published).length;
+  const lessonCount = courses.reduce((a, c) => a + courseLessons(c.id).length, 0);
   return (
     <Shell user={me}>
-      <h1 className="mb-4 text-2xl font-bold text-ink">Admin</h1>
+      <h1 className="mb-4 text-2xl font-bold text-ink">Welcome back, {me.name.split(" ")[0]}</h1>
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <div className="card"><p className="label">Courses</p><p className="mt-1 text-2xl font-bold text-ink">{courses.length}</p></div>
+        <div className="card"><p className="label">Published</p><p className="mt-1 text-2xl font-bold text-brand">{published}</p></div>
+        <div className="card"><p className="label">Lessons</p><p className="mt-1 text-2xl font-bold text-ink">{lessonCount}</p></div>
+      </div>
       <div className="grid gap-6 md:grid-cols-[1fr_320px]">
         <div>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Your courses</h2>

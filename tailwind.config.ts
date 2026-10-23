@@ -1,21 +1,23 @@
 import type { Config } from "tailwindcss";
 
-// Tokens from the aios-lms palette (teal), our own brand — not Edmingle's.
+// Edmingle-style identity (our own hues): dark navy sidebar + top bar,
+// indigo/purple accent, cool light content, white cards.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        bg: "#f5f7f6",
+        bg: "#f5f6fb",
         surface: "#ffffff",
-        sunk: "#eef2f1",
-        ink: "#13201d",
-        muted: "#59665f",
-        line: "#dae2df",
-        brand: { DEFAULT: "#0d6b62", dark: "#0a564f", soft: "#dfeeeb" },
-        good: "#1d7438",
-        warn: "#865800",
-        bad: "#a12d44",
+        sunk: "#eef0f8",
+        ink: "#1c1f3b",
+        muted: "#6b6f8d",
+        line: "#e6e7f2",
+        brand: { DEFAULT: "#6354e0", dark: "#4f42c7", soft: "#ece9fd" }, // indigo/purple
+        sidebar: { DEFAULT: "#17183a", bar: "#1f2150", hover: "#2a2c5e", text: "#a7a9d0" },
+        good: "#1d9d5c",
+        warn: "#9a6a00",
+        bad: "#c23a57",
       },
       borderRadius: { xl: "0.85rem" },
     },
