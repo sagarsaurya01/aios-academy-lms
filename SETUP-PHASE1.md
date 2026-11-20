@@ -17,7 +17,7 @@ Nothing here costs money — Supabase has a free plan, and Razorpay is in **test
    - Region: **Mumbai (ap-south-1)**.
    - Click **Create new project** and wait ~2 minutes while it sets up.
 3. **Create the tables.** Left menu → **SQL Editor** → **New query**.
-   - Open the file `supabase/migrations/0001_init.sql` (in this project folder),
+   - Open the file `supabase/migrations/20261120093000_init.sql` (in this project folder),
      copy *everything* in it, paste into the box, and click **Run**.
    - It should say *Success*. (This builds all the tables and adds 2 demo courses.)
 4. **Get your 2 keys.** Left menu → **Project Settings** (gear) → **API**.
