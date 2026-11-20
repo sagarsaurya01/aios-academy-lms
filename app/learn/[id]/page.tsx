@@ -3,40 +3,45 @@ import { notFound, redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import { currentUser } from "@/lib/session";
 import {
-  getCourse, getChapters, getLessons, getBatchesForCourse, getEnrolmentForCourse,
-  doneLessons, lessonOpen, dayInBatch, courseProgressPct, courseLessons,
-  quizScore, eligibleForCert, getCert, getLesson,
+  getCourse, getOutline, getBatchForCourse, getEnrolmentForCourse,
+  doneLessons, quizScores, eligibleForCert, getCert,
+  dayInBatch, chapterOpen, progressPct, type Lesson, type Course,
 } from "@/lib/data";
 import { completeLessonAction, submitQuizAction, getCertAction } from "@/app/actions";
 
-export default function LearnPage({
+export default async function LearnPage({
   params, searchParams,
 }: { params: { id: string }; searchParams: { lesson?: string; quiz?: string } }) {
-  const me = currentUser();
-  if (!me) redirect("/");
-  const course = getCourse(params.id);
+  const me = await currentUser();
+  if (!me) redirect("/login");
+  const course = await getCourse(params.id);
   if (!course) notFound();
-  const batch = getBatchesForCourse(course.id)[0];
-  const e = getEnrolmentForCourse(me.id, course.id);
+  const [batch, e, outline] = await Promise.all([
+    getBatchForCourse(course.id), getEnrolmentForCourse(me.id, course.id), getOutline(course.id),
+  ]);
   if (!e || !batch) redirect(`/courses/${course.id}`);
 
-  const lessons = courseLessons(course.id);
-  const done = new Set(doneLessons(e.id));
-  const pct = courseProgressPct(course.id, e.id);
-  const eligible = eligibleForCert(course.id, e.id);
-  const cert = getCert(me.id, course.id);
+  const lessons = outline.flatMap((ch) => ch.lessons);
+  const [doneIds, scores, eligible, cert] = await Promise.all([
+    doneLessons(e.id), quizScores(e.id), eligibleForCert(course.id, e.id), getCert(me.id, course.id),
+  ]);
+  const done = new Set(doneIds);
+  const pct = progressPct(lessons.length, done.size);
+  const today = dayInBatch(batch);
 
-  // current lesson: the one in the query, else the first open+incomplete, else first
-  const openLessons = lessons.filter((l) => lessonOpen(batch, l));
-  const current = (searchParams.lesson && getLesson(searchParams.lesson))
-    || openLessons.find((l) => !done.has(l.id)) || openLessons[0] || lessons[0];
-  const justQuiz = searchParams.quiz ? getLesson(searchParams.quiz) : null;
+  // map lesson id -> whether its chapter is unlocked today
+  const openById = new Map<string, boolean>();
+  outline.forEach((ch) => ch.lessons.forEach((l) => openById.set(l.id, chapterOpen(batch, ch.dripDay))));
+  const openLessons = lessons.filter((l) => openById.get(l.id));
+
+  const byId = (id?: string) => (id ? lessons.find((l) => l.id === id) : undefined);
+  const current = byId(searchParams.lesson) || openLessons.find((l) => !done.has(l.id)) || openLessons[0] || lessons[0];
+  const justQuiz = byId(searchParams.quiz);
 
   return (
     <Shell user={me}>
       <Link href={`/courses/${course.id}`} className="text-sm text-muted hover:text-ink">← {course.title}</Link>
       <div className="mt-2 grid gap-6 md:grid-cols-[1fr_300px]">
-        {/* main */}
         <div>
           <div className="mb-3 flex items-center gap-3">
             <div className="h-2 flex-1 rounded bg-sunk"><div className="h-2 rounded bg-brand" style={{ width: pct + "%" }} /></div>
@@ -45,44 +50,48 @@ export default function LearnPage({
 
           {justQuiz && (
             <div className="card mb-4 border-brand">
-              <b className="text-ink">Quiz result: {quizScore(e.id, justQuiz.id)}/{justQuiz.quiz?.length}</b>
-              <p className="text-sm text-muted">{(quizScore(e.id, justQuiz.id) ?? 0) >= 2 ? "Passed — well done." : "Score 2+ to pass. Try again from the quiz lesson."}</p>
+              <b className="text-ink">Quiz result: {scores[justQuiz.id] ?? 0}/{justQuiz.quiz?.length ?? 0}</b>
+              <p className="text-sm text-muted">{(scores[justQuiz.id] ?? 0) >= 2 ? "Passed — well done." : "Score 2+ to pass. Try again from the quiz lesson."}</p>
             </div>
           )}
 
-          {current ? <LessonView course={course} lesson={current} batch={batch} enrolmentId={e.id} done={done} /> : <div className="card text-muted">No lessons yet.</div>}
+          {current
+            ? <LessonView course={course} lesson={current} isDone={done.has(current.id)} lastScore={scores[current.id] ?? null} />
+            : <div className="card text-muted">No lessons yet.</div>}
         </div>
 
-        {/* sidebar: curriculum + certificate */}
         <aside className="space-y-4">
           <div className="card">
-            <p className="label">Day {dayInBatch(batch)} of this cohort</p>
-            {getChapters(course.id).map((ch) => (
-              <div key={ch.id} className="mt-3">
-                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted">
-                  <span>{ch.title}</span>
-                  {ch.dripDay > dayInBatch(batch) && <span className="pill-warn pill">Day {ch.dripDay}</span>}
+            <p className="label">Day {today} of this cohort</p>
+            {outline.map((ch) => {
+              const open = chapterOpen(batch, ch.dripDay);
+              return (
+                <div key={ch.id} className="mt-3">
+                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted">
+                    <span>{ch.title}</span>
+                    {ch.dripDay > today && <span className="pill-warn pill">Day {ch.dripDay}</span>}
+                  </div>
+                  <ul className="mt-1 space-y-1">
+                    {ch.lessons.map((l) => {
+                      const isDone = done.has(l.id), isCur = current?.id === l.id;
+                      return (
+                        <li key={l.id}>
+                          {open ? (
+                            <Link href={`/learn/${course.id}?lesson=${l.id}`}
+                              className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${isCur ? "bg-brand-soft text-brand" : "text-ink hover:bg-sunk"}`}>
+                              <span className={isDone ? "text-good" : "text-muted"}>{isDone ? "✓" : l.kind === "quiz" ? "◆" : "▸"}</span>
+                              <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                            </Link>
+                          ) : (
+                            <span className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted">🔒 <span className="truncate">{l.title}</span></span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
-                <ul className="mt-1 space-y-1">
-                  {getLessons(ch.id).map((l) => {
-                    const open = lessonOpen(batch, l), isDone = done.has(l.id), isCur = current?.id === l.id;
-                    return (
-                      <li key={l.id}>
-                        {open ? (
-                          <Link href={`/learn/${course.id}?lesson=${l.id}`}
-                            className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${isCur ? "bg-brand-soft text-brand" : "text-ink hover:bg-sunk"}`}>
-                            <span className={isDone ? "text-good" : "text-muted"}>{isDone ? "✓" : l.kind === "quiz" ? "◆" : "▸"}</span>
-                            <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                          </Link>
-                        ) : (
-                          <span className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted">🔒 <span className="truncate">{l.title}</span></span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="card">
@@ -103,23 +112,21 @@ export default function LearnPage({
   );
 }
 
-function LessonView({ course, lesson, batch, enrolmentId, done }: any) {
-  const isDone = done.has(lesson.id);
+function LessonView({ course, lesson, isDone, lastScore }: { course: Course; lesson: Lesson; isDone: boolean; lastScore: number | null }) {
   if (lesson.kind === "quiz" && lesson.quiz) {
-    const prev = quizScore(enrolmentId, lesson.id);
     return (
       <div>
         <h1 className="mb-1 text-xl font-bold text-ink">{lesson.title}</h1>
-        <p className="mb-4 text-sm text-muted">{lesson.quiz.length} questions · score 2+ to pass{prev != null ? ` · last: ${prev}/${lesson.quiz.length}` : ""}</p>
+        <p className="mb-4 text-sm text-muted">{lesson.quiz.length} questions · score 2+ to pass{lastScore != null ? ` · last: ${lastScore}/${lesson.quiz.length}` : ""}</p>
         <form action={submitQuizAction} className="space-y-4">
           <input type="hidden" name="courseId" value={course.id} />
           <input type="hidden" name="lessonId" value={lesson.id} />
-          {lesson.quiz.map((q: any, qi: number) => (
+          {lesson.quiz.map((q, qi) => (
             <fieldset key={qi} className="card">
               <legend className="px-1 text-xs text-muted">Question {qi + 1}</legend>
               <b className="text-ink">{q.q}</b>
               <div className="mt-2 space-y-1">
-                {q.o.map((o: string, oi: number) => (
+                {q.o.map((o, oi) => (
                   <label key={oi} className="flex items-center gap-2 text-sm text-ink">
                     <input type="radio" name={"q" + qi} value={oi} required /> {o}
                   </label>
@@ -138,7 +145,7 @@ function LessonView({ course, lesson, batch, enrolmentId, done }: any) {
         <div>
           <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-white/15 text-xl">▶</div>
           Video plays here · {lesson.minutes} min<br />
-          <span className="text-xs opacity-70">Watermarked with the learner's name</span>
+          <span className="text-xs opacity-70">Watermarked with the learner&apos;s name</span>
         </div>
       </div>
       <h1 className="mb-2 text-xl font-bold text-ink">{lesson.title}</h1>

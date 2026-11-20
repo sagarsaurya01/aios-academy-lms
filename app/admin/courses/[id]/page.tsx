@@ -2,17 +2,17 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import { currentUser } from "@/lib/session";
-import { getCourse, getChapters, getLessons, getBatchesForCourse, courseLessons } from "@/lib/data";
+import { getCourse, getOutline, getBatchForCourse } from "@/lib/data";
 import { addChapterAction, addLessonAction, publishBatchAction } from "@/app/actions";
 
-export default function CourseBuilder({ params }: { params: { id: string } }) {
-  const me = currentUser();
-  if (!me) redirect("/");
+export default async function CourseBuilder({ params }: { params: { id: string } }) {
+  const me = await currentUser();
+  if (!me) redirect("/login");
   if (me.role !== "admin") redirect("/");
-  const course = getCourse(params.id);
+  const course = await getCourse(params.id);
   if (!course) notFound();
-  const chapters = getChapters(course.id);
-  const batch = getBatchesForCourse(course.id)[0];
+  const [outline, batch] = await Promise.all([getOutline(course.id), getBatchForCourse(course.id)]);
+  const nLessons = outline.reduce((a, ch) => a + ch.lessons.length, 0);
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -21,27 +21,26 @@ export default function CourseBuilder({ params }: { params: { id: string } }) {
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-ink">{course.title}</h1>
-          <p className="text-sm text-muted">{courseLessons(course.id).length} lessons · <span className={course.published ? "text-good" : ""}>{course.published ? "Published" : "Draft"}</span></p>
+          <p className="text-sm text-muted">{nLessons} lessons · <span className={course.published ? "text-good" : ""}>{course.published ? "Published" : "Draft"}</span></p>
         </div>
         {course.published && <Link href={`/courses/${course.id}`} className="btn-ghost">View live page</Link>}
       </div>
 
       <div className="mt-4 grid gap-6 md:grid-cols-[1fr_320px]">
-        {/* curriculum */}
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Curriculum</h2>
-          {chapters.length === 0 && <div className="card text-sm text-muted">No chapters yet. Add one on the right.</div>}
-          {chapters.map((ch) => (
+          {outline.length === 0 && <div className="card text-sm text-muted">No chapters yet. Add one on the right.</div>}
+          {outline.map((ch) => (
             <div key={ch.id} className="card">
               <div className="mb-2 flex items-center justify-between">
                 <b className="text-ink">{ch.title}</b>
                 <span className="pill">{ch.dripDay === 0 ? "From day 1" : "Unlocks day " + ch.dripDay}</span>
               </div>
               <ul className="mb-3 space-y-1 text-sm text-muted">
-                {getLessons(ch.id).map((l) => (
+                {ch.lessons.map((l) => (
                   <li key={l.id} className="flex items-center gap-2"><span className="text-brand">{l.kind === "quiz" ? "◆" : "▸"}</span>{l.title}<span className="ml-auto">{l.minutes} min</span></li>
                 ))}
-                {getLessons(ch.id).length === 0 && <li className="italic">No lessons yet.</li>}
+                {ch.lessons.length === 0 && <li className="italic">No lessons yet.</li>}
               </ul>
               <form action={addLessonAction} className="space-y-2 rounded-lg bg-sunk p-3">
                 <input type="hidden" name="courseId" value={course.id} />
@@ -69,7 +68,6 @@ export default function CourseBuilder({ params }: { params: { id: string } }) {
           </form>
         </div>
 
-        {/* publish batch */}
         <aside>
           <div className="card">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">{batch ? "Batch" : "Publish as a batch"}</h2>
@@ -85,8 +83,8 @@ export default function CourseBuilder({ params }: { params: { id: string } }) {
                 <div><label className="label" htmlFor="name">Batch name</label><input id="name" name="name" required className="field" placeholder="November 2026 cohort" /></div>
                 <div><label className="label" htmlFor="startDate">Start date</label><input id="startDate" name="startDate" type="date" defaultValue={today} className="field" /></div>
                 <div><label className="label" htmlFor="seats">Seats (blank = unlimited)</label><input id="seats" name="seats" type="number" min="1" className="field" placeholder="30" /></div>
-                <button className="btn w-full" disabled={courseLessons(course.id).length === 0}>Publish batch</button>
-                {courseLessons(course.id).length === 0 && <p className="text-xs text-muted">Add at least one lesson first.</p>}
+                <button className="btn w-full" disabled={nLessons === 0}>Publish batch</button>
+                {nLessons === 0 && <p className="text-xs text-muted">Add at least one lesson first.</p>}
               </form>
             )}
           </div>

@@ -1,9 +1,17 @@
-import { cookies } from "next/headers";
-import { getUser } from "./data";
+// Current user, from the Supabase auth session + their profile row.
+import { createClient } from "./supabase/server";
+import type { User, Role } from "./data";
 
-const COOKIE = "lms_uid";
-export const currentUserId = (): string | null => cookies().get(COOKIE)?.value ?? null;
-export const currentUser = () => { const id = currentUserId(); return id ? getUser(id) : null; };
-export const setCurrentUser = (id: string) =>
-  cookies().set(COOKIE, id, { httpOnly: true, path: "/", sameSite: "lax" });
-export const clearCurrentUser = () => cookies().delete(COOKIE);
+export async function currentUser(): Promise<User | null> {
+  const sb = createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await sb.from("profiles").select("name, email, role").eq("id", user.id).maybeSingle();
+  const email = profile?.email || user.email || "";
+  return {
+    id: user.id,
+    name: profile?.name || (email ? email.split("@")[0] : "Member"),
+    email,
+    role: (profile?.role as Role) ?? "learner",
+  };
+}

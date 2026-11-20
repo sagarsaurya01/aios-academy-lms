@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { User, getUsers } from "@/lib/data";
-import { switchUserAction } from "@/app/actions";
+import { User } from "@/lib/data";
+import { signOutAction } from "@/app/actions";
 
-// The AI OS leaf symbol (from the brand sheet): two mirrored strokes,
-// blue→purple on the left, navy→orange on the right.
+// The AI OS leaf symbol (from the brand sheet).
 export function AiosMark({ size = 36 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
@@ -21,18 +20,17 @@ export function AiosMark({ size = 36 }: { size?: number }) {
   );
 }
 
-// AI OS layout: a navy icon-rail sidebar, a navy top bar with the academy name
-// + a demo role switch, then a cream content area with white cards.
+// AI OS layout: navy icon rail + navy top bar (academy name, who's logged in,
+// sign out), then a cream content area with white cards.
 export default function Shell({ user, children }: { user: User; children: React.ReactNode }) {
-  const users = getUsers();
   const nav = [
     { href: "/", label: "Courses", icon: "▦" },
     ...(user.role === "admin" ? [{ href: "/admin", label: "Admin", icon: "◧" }] : []),
   ];
+  const initials = (user.name || user.email || "?").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <div className="flex min-h-screen">
-      {/* dark icon rail */}
       <aside className="hidden w-[76px] shrink-0 flex-col items-center gap-1 bg-sidebar py-4 md:flex">
         <div className="mb-4"><AiosMark size={34} /></div>
         {nav.map((n) => (
@@ -44,28 +42,23 @@ export default function Shell({ user, children }: { user: User; children: React.
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* dark top bar */}
         <header className="flex items-center justify-between gap-3 bg-sidebar-bar px-4 py-2.5">
           <div className="flex items-center gap-2 text-white">
             <span className="md:hidden"><AiosMark size={26} /></span>
             <span className="font-display font-semibold">AI OS Academy</span>
-            <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sidebar-text">demo</span>
+            {user.role === "admin" && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sidebar-text">admin</span>}
           </div>
-          <div className="flex items-center gap-2">
-            {/* demo role switch */}
-            <form action={switchUserAction} className="flex items-center gap-1">
-              <input type="hidden" name="to" value="/" />
-              {users.map((u) => (
-                <button key={u.id} name="uid" value={u.id} type="submit"
-                  className={`rounded-md px-2 py-1 text-xs ${u.id === user.id ? "bg-brand text-white" : "bg-white/10 text-sidebar-text hover:bg-white/20"}`}>
-                  {u.name.split(" ")[0]} · {u.role}
-                </button>
-              ))}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-white">
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-brand text-[11px] font-bold">{initials}</span>
+              <span className="hidden text-sm sm:inline">{user.name}</span>
+            </div>
+            <form action={signOutAction}>
+              <button className="rounded-md bg-white/10 px-2.5 py-1 text-xs text-sidebar-text hover:bg-white/20 hover:text-white">Sign out</button>
             </form>
           </div>
         </header>
 
-        {/* mobile nav strip */}
         <div className="flex items-center gap-4 border-b border-line bg-surface px-4 py-2 text-sm md:hidden">
           <Link href="/" className="font-medium text-ink">Courses</Link>
           {user.role === "admin" && <Link href="/admin" className="font-medium text-ink">Admin</Link>}

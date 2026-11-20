@@ -4,13 +4,14 @@ import Shell from "@/components/Shell";
 import { currentUser } from "@/lib/session";
 import { getCourse, getCert, courseLessons } from "@/lib/data";
 
-export default function CertPage({ params }: { params: { id: string } }) {
-  const me = currentUser();
-  if (!me) redirect("/");
-  const course = getCourse(params.id);
+export default async function CertPage({ params }: { params: { id: string } }) {
+  const me = await currentUser();
+  if (!me) redirect("/login");
+  const course = await getCourse(params.id);
   if (!course) notFound();
-  const cert = getCert(me.id, course.id);
+  const cert = await getCert(me.id, course.id);
   if (!cert) redirect(`/learn/${course.id}`);
+  const nLessons = (await courseLessons(course.id)).length;
 
   const d = new Date(cert.issuedAt);
   const li = "https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME"
@@ -28,7 +29,7 @@ export default function CertPage({ params }: { params: { id: string } }) {
           <p className="my-1 text-3xl font-bold text-ink">{me.name}</p>
           <p className="text-sm text-muted">has completed</p>
           <h2 className="mt-1 text-xl font-bold text-brand">{course.title}</h2>
-          <p className="mt-3 text-xs text-muted">{courseLessons(course.id).length} lessons · Issued {d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+          <p className="mt-3 text-xs text-muted">{nLessons} lessons · Issued {d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
           <p className="mt-4 font-mono text-xs text-muted">ID {cert.certNo} · Aikigai Edtech LLP</p>
         </div>
         <div className="mt-4 flex items-center gap-3">

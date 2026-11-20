@@ -11,12 +11,12 @@ const STATES = ["West Bengal", "Maharashtra", "Delhi", "Karnataka", "Tamil Nadu"
 
 // The quote preview is server-rendered from the form state in the URL (GET),
 // so GST updates when you change state/qty/coupon. "Pay" posts the action.
-export default function CheckoutPage({
+export default async function CheckoutPage({
   params, searchParams,
 }: { params: { courseId: string }; searchParams: { qty?: string; state?: string; coupon?: string } }) {
-  const me = currentUser();
-  if (!me) redirect("/");
-  const course = getCourse(params.courseId);
+  const me = await currentUser();
+  if (!me) redirect("/login");
+  const course = await getCourse(params.courseId);
   if (!course) notFound();
   if (!course.priceMinor) redirect(`/courses/${course.id}`); // free courses enrol directly
 

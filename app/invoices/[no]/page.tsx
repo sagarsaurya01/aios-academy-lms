@@ -5,12 +5,12 @@ import { currentUser } from "@/lib/session";
 import { getOrder, getCourse } from "@/lib/data";
 import { rupees, amountWords, SELLER, SAC } from "@/lib/gst";
 
-export default function InvoicePage({ params }: { params: { no: string } }) {
-  const me = currentUser();
-  if (!me) redirect("/");
-  const order = getOrder(decodeURIComponent(params.no));
+export default async function InvoicePage({ params }: { params: { no: string } }) {
+  const me = await currentUser();
+  if (!me) redirect("/login");
+  const order = await getOrder(decodeURIComponent(params.no));
   if (!order) notFound();
-  const course = getCourse(order.courseId);
+  const course = await getCourse(order.courseId);
   const d = new Date(order.at);
 
   return (

@@ -2,17 +2,21 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import { currentUser } from "@/lib/session";
-import { getCourses, getBatchesForCourse, courseLessons } from "@/lib/data";
+import { getCourses, getBatchForCourse, courseLessons } from "@/lib/data";
 import { createCourseAction } from "@/app/actions";
 
-export default function AdminPage({ searchParams }: { searchParams: { error?: string } }) {
-  const me = currentUser();
-  if (!me) redirect("/");
-  if (me.role !== "admin") return <Shell user={me}><div className="card">Admin only. Switch to Sagar (admin) up top.</div></Shell>;
+export default async function AdminPage({ searchParams }: { searchParams: { error?: string } }) {
+  const me = await currentUser();
+  if (!me) redirect("/login");
+  if (me.role !== "admin") return <Shell user={me}><div className="card">Admin only.</div></Shell>;
 
-  const courses = getCourses();
+  const courses = await getCourses();
+  const rows = await Promise.all(courses.map(async (c) => ({
+    course: c, batch: await getBatchForCourse(c.id), nLessons: (await courseLessons(c.id)).length,
+  })));
   const published = courses.filter((c) => c.published).length;
-  const lessonCount = courses.reduce((a, c) => a + courseLessons(c.id).length, 0);
+  const lessonCount = rows.reduce((a, r) => a + r.nLessons, 0);
+
   return (
     <Shell user={me}>
       <h1 className="mb-4 text-2xl font-bold text-ink">Welcome back, {me.name.split(" ")[0]}</h1>
@@ -24,24 +28,21 @@ export default function AdminPage({ searchParams }: { searchParams: { error?: st
       <div className="grid gap-6 md:grid-cols-[1fr_320px]">
         <div>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Your courses</h2>
-          {courses.length === 0 ? (
+          {rows.length === 0 ? (
             <div className="card text-sm text-muted">No courses yet. Create your first one.</div>
           ) : (
             <ul className="space-y-2">
-              {courses.map((c) => {
-                const batch = getBatchesForCourse(c.id)[0];
-                return (
-                  <li key={c.id}>
-                    <Link href={`/admin/courses/${c.id}`} className="card flex items-center justify-between hover:border-brand">
-                      <div>
-                        <p className="font-semibold text-ink">{c.title}</p>
-                        <p className="text-xs text-muted">{courseLessons(c.id).length} lessons · {batch ? batch.name : "no batch yet"}</p>
-                      </div>
-                      <span className={`pill ${c.published ? "pill-good" : ""}`}>{c.published ? "Published" : "Draft"}</span>
-                    </Link>
-                  </li>
-                );
-              })}
+              {rows.map(({ course: c, batch, nLessons }) => (
+                <li key={c.id}>
+                  <Link href={`/admin/courses/${c.id}`} className="card flex items-center justify-between hover:border-brand">
+                    <div>
+                      <p className="font-semibold text-ink">{c.title}</p>
+                      <p className="text-xs text-muted">{nLessons} lessons · {batch ? batch.name : "no batch yet"}</p>
+                    </div>
+                    <span className={`pill ${c.published ? "pill-good" : ""}`}>{c.published ? "Published" : "Draft"}</span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           )}
         </div>
