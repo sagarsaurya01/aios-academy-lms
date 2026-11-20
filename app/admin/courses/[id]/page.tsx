@@ -1,14 +1,9 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import Shell from "@/components/Shell";
-import { currentUser } from "@/lib/session";
+import { notFound } from "next/navigation";
 import { getCourse, getOutline, getBatchForCourse } from "@/lib/data";
 import { addChapterAction, addLessonAction, publishBatchAction } from "@/app/actions";
 
 export default async function CourseBuilder({ params }: { params: { id: string } }) {
-  const me = await currentUser();
-  if (!me) redirect("/login");
-  if (me.role !== "admin") redirect("/");
   const course = await getCourse(params.id);
   if (!course) notFound();
   const [outline, batch] = await Promise.all([getOutline(course.id), getBatchForCourse(course.id)]);
@@ -16,8 +11,8 @@ export default async function CourseBuilder({ params }: { params: { id: string }
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <Shell user={me}>
-      <Link href="/admin" className="text-sm text-muted hover:text-ink">← Admin</Link>
+    <>
+      <Link href="/admin/courses" className="text-sm text-muted hover:text-ink">← Courses</Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-ink">{course.title}</h1>
@@ -90,6 +85,6 @@ export default async function CourseBuilder({ params }: { params: { id: string }
           </div>
         </aside>
       </div>
-    </Shell>
+    </>
   );
 }
