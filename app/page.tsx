@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Shell from "@/components/Shell";
+import Shell, { AiosMark } from "@/components/Shell";
 import { currentUser } from "@/lib/session";
 import { getUsers, getPublishedCourses, getBatchesForCourse, courseLessons, getEnrolmentForCourse } from "@/lib/data";
 import { switchUserAction } from "@/app/actions";
@@ -11,8 +11,8 @@ export default function Home() {
     return (
       <main className="mx-auto grid min-h-screen max-w-md place-items-center px-4">
         <div className="w-full text-center">
-          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-brand text-lg font-bold text-white">AI</div>
-          <h1 className="mb-1 text-2xl font-bold text-ink">AI OS Academy</h1>
+          <div className="mx-auto mb-3 w-12"><AiosMark size={48} /></div>
+          <h1 className="mb-1 font-display text-2xl font-bold text-ink">AI OS Academy</h1>
           <p className="mb-6 text-sm text-muted">Practical AI training for Indian businesses. Pick a demo role to start.</p>
           <form action={switchUserAction} className="space-y-2">
             <input type="hidden" name="to" value="/" />
